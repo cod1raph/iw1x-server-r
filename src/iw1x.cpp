@@ -1,9 +1,7 @@
 #include "iw1x.h"
 
 //// Cvars
-cvar_t *com_cl_running;
 cvar_t *com_dedicated;
-cvar_t *com_logfile;
 cvar_t *com_sv_running;
 cvar_t *fs_game;
 cvar_t *net_lanauthorize;
@@ -11,22 +9,14 @@ cvar_t *sv_allowAnonymous;
 cvar_t *sv_allowDownload;
 cvar_t *sv_floodProtect;
 cvar_t *sv_fps;
-cvar_t *sv_gametype;
-cvar_t *sv_mapRotation;
-cvar_t *sv_mapRotationCurrent;
 cvar_t *sv_master[MAX_MASTER_SERVERS];
 cvar_t *sv_maxclients;
 cvar_t *sv_maxRate;
 cvar_t *sv_onlyVisibleClients;
 cvar_t *sv_pure;
 cvar_t *sv_rconPassword;
-cvar_t *sv_serverid;
 cvar_t *sv_showAverageBPS;
 cvar_t *sv_showCommands;
-
-// VM
-vmCvar_t *bg_fallDamageMaxHeight;
-vmCvar_t *bg_fallDamageMinHeight;
 
 // Custom
 cvar_t *fs_callbacks;
@@ -49,9 +39,6 @@ cvar_t *sv_spectatorNoclip;
 gentity_t *g_entities;
 gclient_t *g_clients;
 level_locals_t *level;
-pmove_t **pm;
-pml_t *pml;
-stringIndex_t *scr_const;
 
 // Functions
 G_Say_t G_Say;
@@ -162,33 +149,15 @@ static ucmd_t ucmds[] =
 customPlayerState_t customPlayerState[MAX_CLIENTS];
 
 cHook *hook_ClientEndFrame;
-cHook *hook_ClientSpawn;
-cHook *hook_ClientThink;
 cHook *hook_Com_Init;
 cHook *hook_DeathmatchScoreboardMessage;
 cHook *hook_GScr_LoadGameTypeScript;
-cHook *hook_PM_AirMove;
 cHook *hook_PM_FlyMove;
-cHook *hook_PmoveSingle;
 cHook *hook_SV_AddOperatorCommands;
 cHook *hook_SV_BeginDownload_f;
 cHook *hook_SV_SendClientGameState;
-cHook *hook_SV_SpawnServer;
 cHook *hook_Sys_LoadDll;
 cHook *hook_Touch_Item_Auto;
-
-time_t sys_timeBase = 0; // Base time in seconds
-uint64_t Sys_Milliseconds64(void) // Current time in ms, using sys_timeBase as origin
-{
-    struct timeval tp;
-    gettimeofday(&tp, NULL);
-    if (!sys_timeBase)
-    {
-        sys_timeBase = tp.tv_sec;
-        return tp.tv_usec / 1000;
-    }
-    return (tp.tv_sec - sys_timeBase) * 1000 + tp.tv_usec / 1000;
-}
 
 // See https://github.com/xtnded/codextended/blob/855df4fb01d20f19091d18d46980b5fdfa95a712/src/shared.c#L632
 #define MAX_VA_STRING 32000
@@ -295,9 +264,7 @@ void custom_Com_Init(char *commandLine)
 
     //// Cvars
     // Create references
-    com_cl_running = Cvar_FindVar("cl_running");
     com_dedicated = Cvar_FindVar("dedicated");
-    com_logfile = Cvar_FindVar("logfile");
     com_sv_running = Cvar_FindVar("sv_running");
     fs_game = Cvar_FindVar("fs_game");
     net_lanauthorize = Cvar_FindVar("net_lanauthorize");
@@ -305,9 +272,6 @@ void custom_Com_Init(char *commandLine)
     sv_allowDownload = Cvar_FindVar("sv_allowDownload");
     sv_floodProtect = Cvar_FindVar("sv_floodProtect");
     sv_fps = Cvar_FindVar("sv_fps");
-    sv_gametype = Cvar_FindVar("g_gametype");
-    sv_mapRotation = Cvar_FindVar("sv_mapRotation");
-    sv_mapRotationCurrent = Cvar_FindVar("sv_mapRotationCurrent");
     sv_master[0] = Cvar_FindVar("sv_master1");
     sv_master[1] = Cvar_FindVar("sv_master2");
     sv_master[2] = Cvar_FindVar("sv_master3");
@@ -318,7 +282,6 @@ void custom_Com_Init(char *commandLine)
     sv_onlyVisibleClients = Cvar_FindVar("sv_onlyVisibleClients");
     sv_pure = Cvar_FindVar("sv_pure");
     sv_rconPassword = Cvar_FindVar("rconpassword");
-    sv_serverid = Cvar_FindVar("sv_serverid");
     sv_showAverageBPS = Cvar_FindVar("sv_showAverageBPS");
     sv_showCommands = Cvar_FindVar("sv_showCommands");
 
@@ -443,15 +406,6 @@ const char* custom_FS_ReferencedPakChecksums(void)
     }
 
     return info;
-}
-
-void custom_SV_SpawnServer(char *server)
-{
-    hook_SV_SpawnServer->unhook();
-    void (*SV_SpawnServer)(char *server);
-    *(int*)&SV_SpawnServer = hook_SV_SpawnServer->from;
-    SV_SpawnServer(server);
-    hook_SV_SpawnServer->hook();
 }
 
 void custom_SV_AddOperatorCommands()
@@ -623,6 +577,18 @@ void custom_SV_MasterHeartbeat(const char *hbname)
 static leakyBucket_t buckets[MAX_BUCKETS];
 static leakyBucket_t* bucketHashes[MAX_HASHES];
 leakyBucket_t outboundLeakyBucket;
+time_t sys_timeBase = 0; // Base time in seconds
+uint64_t Sys_Milliseconds64(void) // Current time in ms, using sys_timeBase as origin
+{
+    struct timeval tp;
+    gettimeofday(&tp, NULL);
+    if (!sys_timeBase)
+    {
+        sys_timeBase = tp.tv_sec;
+        return tp.tv_usec / 1000;
+    }
+    return (tp.tv_sec - sys_timeBase) * 1000 + tp.tv_usec / 1000;
+}
 static long SVC_HashForAddress(netadr_t address)
 {
     unsigned char *ip = address.ip;
@@ -1316,19 +1282,6 @@ void custom_SV_SendClientGameState(client_t *client)
     Com_DPrintf("Sending %i bytes in gamestate to client: %i\n", msg.cursize, clientNum);
 
     SV_SendMessageToClient(&msg, client);
-}
-
-void hook_SV_SetConfigstring_SV_SendServerCommand_cs(client_t *cl, int type, const char *fmt, ...)
-{
-    va_list argptr;
-    byte message[MAX_MSGLEN];
-    va_start(argptr, fmt);
-    vsprintf((char*)message, fmt, argptr);
-    va_end(argptr);
-
-    std::string command((char*)message);
-    
-    return SV_SendServerCommand(cl, type, command.c_str());
 }
 
 scr_error_t scr_errors[MAX_ERROR_BUFFER];
@@ -2432,24 +2385,6 @@ void hook_G_Say(gentity_s *ent, gentity_s *target, int mode, const char *chatTex
 }
 ////
 
-void custom_ClientThink(int clientNum)
-{
-    hook_ClientThink->unhook();
-    void (*ClientThink)(int clientNum);
-    *(int*)&ClientThink = hook_ClientThink->from;
-    ClientThink(clientNum);
-    hook_ClientThink->hook();
-}
-
-void custom_ClientSpawn(gentity_t *ent, const float *spawn_origin, const float *spawn_angles)
-{
-    hook_ClientSpawn->unhook();
-    void (*ClientSpawn)(gentity_t *ent, const float *spawn_origin, const float *spawn_angles);
-    *(int*)&ClientSpawn = hook_ClientSpawn->from;
-    ClientSpawn(ent, spawn_origin, spawn_angles);
-    hook_ClientSpawn->hook();
-}
-
 void custom_ClientEndFrame(gentity_t *ent)
 {
     hook_ClientEndFrame->unhook();
@@ -2480,29 +2415,6 @@ void custom_PM_FlyMove()
     *(int*)&PM_FlyMove = hook_PM_FlyMove->from;
     PM_FlyMove();
     hook_PM_FlyMove->hook();
-}
-
-void custom_PM_AirMove()
-{
-    hook_PM_AirMove->unhook();
-    void (*PM_AirMove)();
-    *(int*)&PM_AirMove = hook_PM_AirMove->from;
-    PM_AirMove();
-    hook_PM_AirMove->hook();
-}
-
-void hook_PM_StepSlideMove_PM_ClipVelocity(const float *in, const float *normal, float *out, float overbounce)
-{
-    PM_ClipVelocity(in, normal, out, overbounce);
-}
-
-void custom_PmoveSingle(pmove_t *pmove)
-{
-    hook_PmoveSingle->unhook();
-    void (*PmoveSingle)(pmove_t *pmove);
-    *(int*)&PmoveSingle = hook_PmoveSingle->from;
-    PmoveSingle(pmove);
-    hook_PmoveSingle->hook();
 }
 
 qboolean hook_StuckInClient(gentity_s *self)
@@ -2675,17 +2587,10 @@ void *custom_Sys_LoadDll(const char *name, char *fqpath, int (**entryPoint)(int,
     fclose(fp);
     ////
 
-    // VM cvars
-    bg_fallDamageMinHeight = (vmCvar_t*)dlsym(libHandle, "bg_fallDamageMinHeight");
-    bg_fallDamageMaxHeight = (vmCvar_t*)dlsym(libHandle, "bg_fallDamageMaxHeight");
-
     // Objects
     g_clients = (gclient_t*)dlsym(libHandle, "g_clients");
     g_entities = (gentity_t*)dlsym(libHandle, "g_entities");
     level = (level_locals_t*)dlsym(libHandle, "level");
-    pm = (pmove_t**)dlsym(libHandle, "pm");
-    pml = (pml_t*)dlsym(libHandle, "pml");
-    scr_const = (stringIndex_t*)dlsym(libHandle, "scr_const");
 
     //// Functions
     Scr_GetFunctionHandle = (Scr_GetFunctionHandle_t)dlsym(libHandle, "Scr_GetFunctionHandle");
@@ -2772,7 +2677,6 @@ void *custom_Sys_LoadDll(const char *name, char *fqpath, int (**entryPoint)(int,
     
     hook_call((int)dlsym(libHandle, "vmMain") + 0xB0, (int)hook_ClientCommand);
     hook_call((int)dlsym(libHandle, "ClientEndFrame") + 0x311, (int)hook_StuckInClient);
-    hook_call((int)dlsym(libHandle, "_init") + 0xDF22, (int)hook_PM_StepSlideMove_PM_ClipVelocity);
 
     hook_jmp((int)dlsym(libHandle, "G_LocalizedStringIndex"), (int)custom_G_LocalizedStringIndex);
     hook_jmp((int)dlsym(libHandle, "va"), (int)custom_va);
@@ -2781,10 +2685,6 @@ void *custom_Sys_LoadDll(const char *name, char *fqpath, int (**entryPoint)(int,
     hook_GScr_LoadGameTypeScript->hook();
     hook_ClientEndFrame = new cHook((int)dlsym(libHandle, "ClientEndFrame"), (int)custom_ClientEndFrame);
     hook_ClientEndFrame->hook();
-    hook_ClientSpawn = new cHook((int)dlsym(libHandle, "ClientSpawn"), (int)custom_ClientSpawn);
-    hook_ClientSpawn->hook();
-    hook_ClientThink = new cHook((int)dlsym(libHandle, "ClientThink"), (int)custom_ClientThink);
-    hook_ClientThink->hook();
     hook_Touch_Item_Auto = new cHook((int)dlsym(libHandle, "Touch_Item_Auto"), (int)custom_Touch_Item_Auto);
     hook_Touch_Item_Auto->hook();
     hook_DeathmatchScoreboardMessage = new cHook((int)dlsym(libHandle, "DeathmatchScoreboardMessage"), (int)custom_DeathmatchScoreboardMessage);
@@ -2835,7 +2735,6 @@ class iw1x
         hook_call(0x0808c7b8, (int)hook_SV_DirectConnect);
         hook_call(0x0808c7ea, (int)hook_SV_AuthorizeIpPacket);
         hook_call(0x0808c74e, (int)hook_SVC_Info);
-        hook_call(0x08089db9, (int)hook_SV_SetConfigstring_SV_SendServerCommand_cs);
 
         hook_jmp(0x080717a4, (int)custom_FS_ReferencedPakChecksums);
         hook_jmp(0x080716cc, (int)custom_FS_ReferencedPakNames);
@@ -2857,8 +2756,6 @@ class iw1x
         hook_Sys_LoadDll->hook();
         hook_Com_Init = new cHook(0x0806c654, (int)custom_Com_Init);
         hook_Com_Init->hook();
-        hook_SV_SpawnServer = new cHook(0x0808a220, (int)custom_SV_SpawnServer);
-        hook_SV_SpawnServer->hook();
         hook_SV_BeginDownload_f = new cHook(0x08087a64, (int)custom_SV_BeginDownload_f);
         hook_SV_BeginDownload_f->hook();
         hook_SV_AddOperatorCommands = new cHook(0x08084a3c, (int)custom_SV_AddOperatorCommands);

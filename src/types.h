@@ -968,7 +968,6 @@ typedef struct
 } stringIndex_t;
 
 extern gentity_t *g_entities;
-extern stringIndex_t *scr_const;
 
 #define com_frameTime (*((int*)(0x0833df1c)))
 #define fs_searchpaths (*((searchpath_t**)(0x080dd590)))

@@ -93,8 +93,6 @@ void gsc_utils_replace();
 void gsc_utils_getsystemtime();
 void gsc_utils_getconfigstring();
 void gsc_utils_makelocalizedstring();
-void gsc_utils_getlocalizedstringindex();
-void gsc_utils_makeupdatedlocalizedstring();
 void gsc_utils_ban();
 void gsc_utils_unban();
 void gsc_utils_strip();

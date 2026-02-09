@@ -62,8 +62,6 @@ scr_function_t scriptFunctions[] =
     {"getSystemTime", gsc_utils_getsystemtime, 0},
     {"getConfigString", gsc_utils_getconfigstring, 0},
     {"makeLocalizedString", gsc_utils_makelocalizedstring, 0},
-    {"getLocalizedStringIndex", gsc_utils_getlocalizedstringindex, 0},
-    {"makeUpdatedLocalizedString", gsc_utils_makeupdatedlocalizedstring, 0},
     {"ban", gsc_utils_ban, 0},
     {"unban", gsc_utils_unban, 0},
     {"strip", gsc_utils_strip, 0},

@@ -429,43 +429,6 @@ void gsc_utils_makelocalizedstring()
     var->type = STACK_LOCALIZED_STRING;
 }
 
-void gsc_utils_getlocalizedstringindex()
-{
-    char *str;
-
-    if (!stackGetParams("l", &str))
-    {
-        stackError("gsc_utils_getlocalizedstringindex() argument is undefined or has a wrong type");
-        Scr_AddUndefined();
-        return;
-    }
-
-    Scr_AddInt(G_LocalizedStringIndex(str));
-}
-
-void gsc_utils_makeupdatedlocalizedstring()
-{
-    char *str;
-    int index;
-    
-    if (!stackGetParams("si", &str, &index))
-    {
-        stackError("gsc_utils_makeupdatedlocalizedstring() argument is undefined or has a wrong type");
-        Scr_AddUndefined();
-        return;
-    }
-    
-    trap_SetConfigstring(index + 1244, str);
-    
-    Scr_AddString(str);
-
-    VariableValue *var;
-    int param = 0;
-
-    var = &scrVmPub.top[-param];
-    var->type = STACK_LOCALIZED_STRING;
-}
-
 void gsc_utils_ban()
 {
     int numParam = Scr_GetNumParam();
@@ -498,7 +461,7 @@ void gsc_utils_unban()
     }
 }
 
-void gsc_utils_strip() 
+void gsc_utils_strip()
 {
     const char *input;
     char result[256] = {0};
@@ -536,7 +499,7 @@ void gsc_utils_strip()
     Scr_AddString(result);
 }
 
-void gsc_utils_strstr() 
+void gsc_utils_strstr()
 {
     const char *str, *sub;
     
@@ -557,7 +520,7 @@ void gsc_utils_strstr()
     }
 }
 
-void gsc_utils_monotone() 
+void gsc_utils_monotone()
 {
     char *input;
 
