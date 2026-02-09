@@ -1,6 +1,6 @@
 Old version: https://vcodmods.com/server/iw1x-server-source
 # CoD 1.1 server mod
-**Focused on download speed and security**
+**Focused on downloading and security**
 
 Some features are:
 - Faster download speed (UDP)
