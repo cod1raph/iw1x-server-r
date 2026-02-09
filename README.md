@@ -12,6 +12,7 @@ Some features are:
 
 ### References
 - [Killtube](https://killtube.org/)
+- The [reverse engineering Discord server](https://discord.com/invite/weKN5wb)
 - [codextended](https://github.com/xtnded/codextended)
 - [zk_libcod](https://github.com/ibuddieat/zk_libcod)
 - [CoD2rev_Server](https://github.com/voron00/CoD2rev_Server) and [voron's libcod fork](https://github.com/voron00/libcod)
