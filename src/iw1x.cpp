@@ -19,7 +19,6 @@ cvar_t *sv_showAverageBPS;
 cvar_t *sv_showCommands;
 
 // Custom
-cvar_t *fs_callbacks;
 cvar_t *fs_callbacks_additional;
 cvar_t *fs_svrPaks;
 cvar_t *g_deadChat;
@@ -290,7 +289,6 @@ void custom_Com_Init(char *commandLine)
     Cvar_Get("iw1x_date", __DATE__, CVAR_SERVERINFO | CVAR_ROM);
 
     // Register and create references
-    fs_callbacks = Cvar_Get("fs_callbacks", "maps/mp/gametypes/_callbacksetup", CVAR_ARCHIVE);
     fs_callbacks_additional = Cvar_Get("fs_callbacks_additional", "", CVAR_ARCHIVE);
     fs_svrPaks = Cvar_Get("fs_svrPaks", "", CVAR_ARCHIVE);
     g_deadChat = Cvar_Get("g_deadChat", "0", CVAR_ARCHIVE);
@@ -345,22 +343,19 @@ void custom_GScr_LoadGameTypeScript()
     *(int*)&GScr_LoadGameTypeScript = hook_GScr_LoadGameTypeScript->from;
     GScr_LoadGameTypeScript();
     hook_GScr_LoadGameTypeScript->hook();
-
-    unsigned int i;
     
-    if(*fs_callbacks_additional->string)
-        if(!Scr_LoadScript(fs_callbacks_additional->string))
-            Com_DPrintf("custom_GScr_LoadGameTypeScript: Scr_LoadScript for fs_callbacks_additional failed.\n");
-
-    for (i = 0; i < sizeof(callbacks) / sizeof(callbacks[0]); i++)
+    if (*fs_callbacks_additional->string)
     {
-        if(callbacks[i].custom)
-            *callbacks[i].pos = Scr_GetFunctionHandle(fs_callbacks_additional->string, callbacks[i].name);
+        if (!Scr_LoadScript(fs_callbacks_additional->string))
+        {
+            Com_DPrintf("custom_GScr_LoadGameTypeScript: Scr_LoadScript for fs_callbacks_additional failed.\n");
+        }
         else
-            *callbacks[i].pos = Scr_GetFunctionHandle(fs_callbacks->string, callbacks[i].name);
-
-        /*if (*callbacks[i].pos && g_debugCallbacks->integer)
-            Com_Printf("%s found @ %p\n", callbacks[i].name, scrVarPub.programBuffer + *callbacks[i].pos);*/ // TODO: verify scrVarPub_t
+        {
+            for(unsigned int i = 0; i < sizeof(callbacks) / sizeof(callbacks[0]); i++)
+                if(callbacks[i].custom)
+                    *callbacks[i].pos = Scr_GetFunctionHandle(fs_callbacks_additional->string, callbacks[i].name);
+        }
     }
 }
 
