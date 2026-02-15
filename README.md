@@ -5,8 +5,23 @@ Old version: https://vcodmods.com/server/iw1x-server-source
 Some features are:
 - Faster download speed (UDP)
 - Freeze exploit patch
-- Don't require fresh CD key
+- CD key validity bypass
+- Temporary ban
 
+---
+---
+
+## Build instructions
+
+Using Linux
+
+- `apt install cmake`
+- clone/download the repo, then `cd build`
+- `cmake ..`, or if you will use [MiscMod](https://github.com/cato-a/CoDaM_MiscMod/tree/libcod), use `cmake -DENABLE_UNSAFE=ON ..` instead
+- `make`
+Obtain `iw1x.so` from `build/bin`
+
+---
 ---
 ---
 
@@ -18,4 +33,4 @@ Some features are:
 - [CoD2rev_Server](https://github.com/voron00/CoD2rev_Server) and [voron's libcod fork](https://github.com/voron00/libcod)
 - [RTCW-MP](https://github.com/id-Software/RTCW-MP)
 - [Ghidra](https://en.wikipedia.org/wiki/Ghidra) and [IDA Free](https://hex-rays.com/ida-free/)
-- [ChatGPT](https://chat.openai.com/)
+- [ChatGPT](https://chatgpt.com/)
