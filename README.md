@@ -1,9 +1,10 @@
-Old version: https://vcodmods.com/server/iw1x-server-source
+Based on: https://vcodmods.com/server/iw1x-server-source
 # CoD 1.1 server mod
 **Focused on improving downloading and security**
 
 Some features are:
 - Faster download speed (UDP)
+- Download stuck issue fix
 - Freeze exploit patch
 - CD key validity bypass
 - Temporary ban
@@ -19,6 +20,7 @@ Using Linux
 - clone/download the repo, then `cd build`
 - `cmake ..`, or if you will use MiscMod, use `cmake -DENABLE_UNSAFE=ON ..` instead
 - `make`
+
 Obtain `iw1x.so` from `build/bin`
 
 ---
