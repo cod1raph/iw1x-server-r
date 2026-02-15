@@ -17,7 +17,7 @@ Using Linux
 
 - `apt install cmake`
 - clone/download the repo, then `cd build`
-- `cmake ..`, or if you will use [MiscMod](https://github.com/cato-a/CoDaM_MiscMod/tree/libcod), use `cmake -DENABLE_UNSAFE=ON ..` instead
+- `cmake ..`, or if you will use MiscMod, use `cmake -DENABLE_UNSAFE=ON ..` instead
 - `make`
 Obtain `iw1x.so` from `build/bin`
 
