@@ -16,8 +16,8 @@ Some features are:
 
 Using Linux
 
-- `apt install cmake`
-- clone/download the repo, then `cd build`
+- `apt install cmake g++-multilib`
+- download the repo, then `cd build`
 - `cmake ..`, or if you will use MiscMod, use `cmake -DENABLE_UNSAFE=ON ..` instead
 - `make`
 
