@@ -2298,7 +2298,7 @@ qboolean custom_SV_ClientCommand(client_t *cl, msg_t *msg)
         return qfalse;
     }
     
-    if (!I_strncmp("score", s, 5) || !I_strncmp("mr ", s, 3) || !I_strncmp("userinfo ", s, 9) || !I_strncmp("sprint ", s, 6))
+    if (!I_strncmp("score", s, 5) || !I_strncmp("mr ", s, 3) || !I_strncmp("userinfo ", s, 9) || !I_strncmp("ufo", s, 3))
     {
         floodprotect = qfalse;
     }
