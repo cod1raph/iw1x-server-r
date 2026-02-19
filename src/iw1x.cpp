@@ -31,6 +31,7 @@ cvar_t *sv_cracked;
 cvar_t *sv_debugRate;
 cvar_t *sv_downloadForce;
 cvar_t *sv_fastDownload;
+cvar_t *sv_fastDownloadSpeed;
 cvar_t *sv_heartbeatDelay;
 cvar_t *sv_spectatorNoclip;
 ////
@@ -304,6 +305,7 @@ void custom_Com_Init(char *commandLine)
     sv_debugRate = Cvar_Get("sv_debugRate", "0", CVAR_ARCHIVE);
     sv_downloadForce = Cvar_Get("sv_downloadForce", "0", CVAR_ARCHIVE);
     sv_fastDownload = Cvar_Get("sv_fastDownload", "0", CVAR_ARCHIVE);
+    sv_fastDownloadSpeed = Cvar_Get("sv_fastDownloadSpeed", std::to_string(MAX_DOWNLOAD_WINDOW).c_str(), CVAR_ARCHIVE);
     sv_heartbeatDelay = Cvar_Get("sv_heartbeatDelay", "30", CVAR_ARCHIVE);
     sv_spectatorNoclip = Cvar_Get("sv_spectatorNoclip", "0", CVAR_ARCHIVE);
     ////
@@ -2068,7 +2070,7 @@ void custom_SV_WriteDownloadToClient(client_t *cl, msg_t *msg)
         curindex = (cl->downloadCurrentBlock % MAX_DOWNLOAD_WINDOW);
 
         blksize = MAX_DOWNLOAD_BLKSIZE;
-        if (sv_fastDownload->integer)
+        if(sv_fastDownload->integer)
             blksize = MAX_DOWNLOAD_BLKSIZE_FAST;
         
         if (!cl->downloadBlocks[curindex])
@@ -2182,11 +2184,12 @@ void custom_SV_SendClientMessages(void)
 
         if (sv_fastDownload->integer && cl->download)
         {
-            for (int j = 0; j < 1 + ((sv_fps->integer / 20) * MAX_DOWNLOAD_WINDOW); j++)
+            // TODO: See about using "customPlayerState[i].downloadTimedOut" like in zk_libcod.
+            for (int j = 0; j < sv_fastDownloadSpeed->integer; j++)
             {
+                cl->nextSnapshotTime = svs.time;
                 while (cl->netchan.unsentFragments)
                 {
-                    cl->nextSnapshotTime = svs.time + SV_RateMsec(cl, cl->netchan.unsentLength - cl->netchan.unsentFragmentStart);
                     SV_Netchan_TransmitNextFragment(&cl->netchan);
                 }
                 SV_SendClientSnapshot(cl);
@@ -2276,7 +2279,7 @@ void custom_SV_SendMessageToClient(msg_t *msg, client_t *client)
     if (client->netchan.remoteAddress.type == NA_LOOPBACK || Sys_IsLANAddress(client->netchan.remoteAddress)
         || (sv_fastDownload->integer && client->download))
     {
-        client->nextSnapshotTime = svs.time - 1;
+        client->nextSnapshotTime = svs.time;
         return;
     }
 
