@@ -43,6 +43,31 @@ void gsc_player_getvelocity(scr_entref_t ref)
     Scr_AddVector(ps->velocity);
 }
 
+void gsc_player_addvelocity(scr_entref_t ref)
+{
+	int id = ref.entnum;
+	vec3_t velocity;
+
+	if (!stackGetParams("v", &velocity))
+	{
+		stackError("gsc_player_addvelocity() argument is undefined or has a wrong type");
+		Scr_AddUndefined();
+		return;
+	}
+
+	if (id >= MAX_CLIENTS)
+	{
+		stackError("gsc_player_addvelocity() entity %i is not a player", id);
+		Scr_AddUndefined();
+		return;
+	}
+
+	playerState_t *ps = SV_GameClientNum(id);
+	VectorAdd(ps->velocity, velocity, ps->velocity);
+
+	Scr_AddBool(qtrue);
+}
+
 void gsc_player_getuserinfokey(scr_entref_t ref)
 {
     int id = ref.entnum;

@@ -129,6 +129,7 @@ scr_method_t scriptMethods[] =
 
     {"getVelocity", gsc_player_getvelocity, 0},
     {"setVelocity", gsc_player_setvelocity, 0},
+    {"addVelocity", gsc_player_addvelocity, 0},
     {"getPlayerAngles", gsc_player_getangles, 0},
     {"getStance", gsc_player_getstance, 0},
     {"isOnLadder", gsc_player_isonladder, 0},

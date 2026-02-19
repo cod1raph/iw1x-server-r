@@ -40,6 +40,7 @@ void gsc_entity_showtoplayer(scr_entref_t ref);
 //// Player
 void gsc_player_setvelocity(scr_entref_t ref);
 void gsc_player_getvelocity(scr_entref_t ref);
+void gsc_player_addvelocity(scr_entref_t ref);
 void gsc_player_button_ads(scr_entref_t ref);
 void gsc_player_button_left(scr_entref_t ref);
 void gsc_player_button_right(scr_entref_t ref);

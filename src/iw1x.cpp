@@ -25,6 +25,8 @@ cvar_t *g_deadChat;
 cvar_t *g_debugCallbacks;
 cvar_t *g_playerEject;
 cvar_t *g_resetSlide;
+cvar_t *sv_connectMessage;
+cvar_t *sv_connectMessageChallenges;
 cvar_t *sv_cracked;
 cvar_t *sv_debugRate;
 cvar_t *sv_downloadForce;
@@ -146,6 +148,7 @@ static ucmd_t ucmds[] =
 };
 
 customPlayerState_t customPlayerState[MAX_CLIENTS];
+customChallenge_t customChallenge[MAX_CHALLENGES];
 
 cHook *hook_ClientEndFrame;
 cHook *hook_Com_Init;
@@ -295,6 +298,8 @@ void custom_Com_Init(char *commandLine)
     g_debugCallbacks = Cvar_Get("g_debugCallbacks", "0", CVAR_ARCHIVE);
     g_playerEject = Cvar_Get("g_playerEject", "1", CVAR_ARCHIVE);
     g_resetSlide = Cvar_Get("g_resetSlide", "0", CVAR_ARCHIVE);
+    sv_connectMessage = Cvar_Get("sv_connectMessage", "", CVAR_ARCHIVE);
+    sv_connectMessageChallenges = Cvar_Get("sv_connectMessageChallenges", "1", CVAR_ARCHIVE);
     sv_cracked = Cvar_Get("sv_cracked", "0", CVAR_ARCHIVE);
     sv_debugRate = Cvar_Get("sv_debugRate", "0", CVAR_ARCHIVE);
     sv_downloadForce = Cvar_Get("sv_downloadForce", "0", CVAR_ARCHIVE);
@@ -827,6 +832,8 @@ void custom_SV_GetChallenge(netadr_t from)
         challenge->time = svs.time;
         challenge->connected = qfalse;
 
+        customChallenge[oldest].ignoredCount = 0;
+
         i = oldest;
     }
     
@@ -967,6 +974,27 @@ void hook_SV_DirectConnect(netadr_t from)
 
     if(unbanned)
         Cmd_TokenizeString(argBackup.c_str());
+
+    if (*sv_connectMessage->string && sv_connectMessageChallenges->integer)
+    {
+        int userinfoChallenge = atoi(Info_ValueForKey(userinfo, "challenge"));
+        for (int i = 0; i < MAX_CHALLENGES; i++)
+        {
+            challenge_t *challenge = &svs.challenges[i];
+            if (NET_CompareAdr(from, challenge->adr))
+            {
+                if (challenge->challenge == userinfoChallenge)
+                {
+                    if (customChallenge[i].ignoredCount < sv_connectMessageChallenges->integer)
+                    {
+                        NET_OutOfBandPrint(NS_SERVER, from, "print\n%s\n", sv_connectMessage->string);
+                        customChallenge[i].ignoredCount++;
+                        return;
+                    }
+                }
+            }
+        }
+    }
     
     SV_DirectConnect(from);
 }
