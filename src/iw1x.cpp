@@ -1255,7 +1255,7 @@ void custom_SV_SendClientGameState(client_t *client)
                 {
                     /*
                     If client has cl_allowDownload enabled, but sv_allowDownload is disabled, client will attempt to download anyway, and then fail joining.
-                    To fix this, if sv_allowDownload is disabled, write cl_allowDownload disabled on client, in case is enabled.
+                    To fix this, if sv_allowDownload is disabled, write cl_allowDownload 0 on client.
                     */
                     csCopy.append("\\cl_allowDownload\\0");
                 }
