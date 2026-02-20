@@ -2,6 +2,10 @@ cmake_minimum_required(VERSION 3.10)
 
 project(iw1x-server)
 
+# C++17 is required for std::filesystem
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 set(SEPARATOR "---------------------")
 
 # -m32:     32-bit

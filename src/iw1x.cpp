@@ -290,6 +290,7 @@ void custom_Com_Init(char *commandLine)
 
     // Register
     Cvar_Get("iw1x", "1", CVAR_SERVERINFO | CVAR_ROM);
+    Cvar_Get("iw1x_version", "raph", CVAR_SERVERINFO | CVAR_ROM);
     Cvar_Get("iw1x_date", __DATE__, CVAR_SERVERINFO | CVAR_ROM);
 
     // Register and create references
