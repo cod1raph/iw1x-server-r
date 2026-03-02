@@ -4,8 +4,6 @@ static const VM_Call_t VM_Call = (VM_Call_t)0x08092158;
 typedef char* (*va_t)(const char *format, ...);
 extern va_t va;
 
-typedef void (*G_Error_t)(const char *fmt, ...);
-
 typedef void (*Cbuf_ExecuteText_t)(cbufExec_t exec_when, const char* text);
 static const Cbuf_ExecuteText_t Cbuf_ExecuteText = (Cbuf_ExecuteText_t)0x0805a8a0;
 
@@ -36,8 +34,6 @@ extern ClientCommand_t ClientCommand;
 typedef qboolean (*StuckInClient_t)(gentity_s *self);
 extern StuckInClient_t StuckInClient;
 
-typedef int (*Jump_Check_t)();
-
 //// BG
 typedef int (*BG_GetNumWeapons_t)(void);
 extern BG_GetNumWeapons_t BG_GetNumWeapons;
@@ -47,15 +43,6 @@ extern BG_GetInfoForWeapon_t BG_GetInfoForWeapon;
 
 typedef int (*BG_GetWeaponIndexForName_t)(const char *name);
 extern BG_GetWeaponIndexForName_t BG_GetWeaponIndexForName;
-
-typedef int (*BG_AnimationIndexForString_t)(char *src);
-extern BG_AnimationIndexForString_t BG_AnimationIndexForString;
-
-typedef int (*BG_AnimScriptEvent_t)(playerState_t *ps, scriptAnimEventTypes_t event, int isContinue, int force);
-extern BG_AnimScriptEvent_t BG_AnimScriptEvent;
-
-typedef void (*BG_AddPredictableEventToPlayerstate_t)(int newEvent, int eventParm, playerState_t *ps);
-extern BG_AddPredictableEventToPlayerstate_t BG_AddPredictableEventToPlayerstate;
 ////
 
 //// Cmd
@@ -98,10 +85,7 @@ typedef char* (*Com_Parse_t)(const char **data_p);
 static const Com_Parse_t Com_Parse = (Com_Parse_t)0x08081d1c;
 
 typedef void (*Com_SkipRestOfLine_t)(const char **data);
-
-typedef char* (*Com_ParseRestOfLine_t)(const char **data);
-
-typedef int (*Com_ParseInt_t)(const char **data);
+extern Com_SkipRestOfLine_t Com_SkipRestOfLine;
 
 typedef int (*Com_Milliseconds_t)(void);
 static const Com_Milliseconds_t Com_Milliseconds = (Com_Milliseconds_t)0x0806d988;
@@ -166,18 +150,14 @@ static const FS_FCloseFile_t FS_FCloseFile = (FS_FCloseFile_t)0x0805c114;
 
 typedef void (*FS_WriteFile_t)(const char* filename, const void* buffer, int size);
 static const FS_WriteFile_t FS_WriteFile = (FS_WriteFile_t)0x08062a2c;
+
+typedef void (*FS_Printf_t)(fileHandle_t h, const char *fmt, ...);
+static const FS_Printf_t FS_Printf = (FS_Printf_t)0x0805e3b0;
 ////
 
 //// G
 typedef void (*G_Say_t)(gentity_s *ent, gentity_s *target, int mode, const char *chatText);
 extern G_Say_t G_Say;
-
-typedef void (*G_RegisterCvars_t)(void);
-extern G_RegisterCvars_t G_RegisterCvars;
-
-typedef void (*G_AddEvent_t)(gentity_t *ent, int event, int eventParm);
-
-typedef void (*G_AddPredictableEvent_t)(gentity_t *ent, int event, int eventParm);
 
 typedef int (*G_LocalizedStringIndex_t)(const char *string);
 extern G_LocalizedStringIndex_t G_LocalizedStringIndex;
@@ -295,16 +275,10 @@ static const NET_CompareAdr_t NET_CompareAdr = (NET_CompareAdr_t)0x08080dec;
 ////
 
 //// PM
-typedef int (*PM_GetEffectiveStance_t)(playerState_t *ps);
-
-typedef void (*PM_ClipVelocity_t)(const float *in, const float *normal, float *out, float overbounce);
-
 typedef void (*PM_NoclipMove_t)();
 ////
 
 //// Q
-typedef char* (*Q_strlwr_t)(char *s1);
-extern Q_strlwr_t Q_strlwr;
 
 typedef char* (*Q_strupr_t)(char *s1);
 extern Q_strupr_t Q_strupr;
@@ -312,6 +286,7 @@ extern Q_strupr_t Q_strupr;
 typedef void (*Q_strcat_t)(char *dest, int size, const char *src);
 
 typedef void (*Q_strncpyz_t)(char *dest, const char *src, int destsize);
+extern Q_strncpyz_t Q_strncpyz;
 
 typedef void (*Q_CleanStr_t)(char *string);
 
@@ -554,10 +529,6 @@ extern trap_GetConfigstringConst_t trap_GetConfigstringConst;
 typedef void (*trap_GetConfigstring_t)(int index, char *buffer, int bufferSize);
 extern trap_GetConfigstring_t trap_GetConfigstring;
 
-typedef void (*trap_GetUserinfo_t)(int num, char *buffer, int bufferSize);
-
 typedef void (*trap_SetConfigstring_t)(int index, const char *val);
 extern trap_SetConfigstring_t trap_SetConfigstring;
-
-typedef int (*trap_GetArchivedPlayerState_t)(int clientNum, int *pArchiveTime, playerState_t *ps);
 ////

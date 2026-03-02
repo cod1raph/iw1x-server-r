@@ -7,7 +7,7 @@ Some features are:
 - Download stuck issue fix
 - Freeze exploit patch
 - CD key validity bypass
-- Temporary ban
+- IP ban support
 
 ---
 ---

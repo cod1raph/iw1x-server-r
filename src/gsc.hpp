@@ -1,7 +1,7 @@
-#ifndef GSC_H
-#define GSC_H
+#ifndef GSC_HPP
+#define GSC_HPP
 
-#include "shared.h"
+#include "shared.hpp"
 
 #define STACK_UNDEFINED 0
 #define STACK_STRING 1
@@ -31,9 +31,6 @@ void gsc_testmethod(scr_entref_t ref);
 ////
 
 //// Entity
-void gsc_entity_setbounds(scr_entref_t ref);
-void gsc_entity_setclipmask(scr_entref_t ref);
-void gsc_entity_getclipmask(scr_entref_t ref);
 void gsc_entity_showtoplayer(scr_entref_t ref);
 ////
 
@@ -60,15 +57,10 @@ void gsc_player_processclientcommand(scr_entref_t ref);
 void gsc_player_dropclient(scr_entref_t ref);
 void gsc_player_getfps(scr_entref_t ref);
 void gsc_player_isonladder(scr_entref_t ref);
-void gsc_player_noclip(scr_entref_t ref);
 void gsc_player_ufo(scr_entref_t ref);
 void gsc_player_connectionlesspackettoclient(scr_entref_t ref);
-void gsc_player_disableitemautopickup(scr_entref_t ref);
-void gsc_player_enableitemautopickup(scr_entref_t ref);
-void gsc_player_playscriptanimation(scr_entref_t ref);
 void gsc_player_isbot(scr_entref_t ref);
 void gsc_player_sethiddenfromscoreboard(scr_entref_t ref);
-void gsc_player_ishiddenfromscoreboard(scr_entref_t ref);
 ////
 
 //// Weapons
@@ -85,8 +77,6 @@ void gsc_utils_fclose();
 
 void gsc_utils_sendcommandtoclient();
 void gsc_utils_logprintconsole();
-void gsc_utils_getsubstr();
-void gsc_utils_getascii();
 void gsc_utils_toupper();
 void gsc_utils_tolower();
 void gsc_utils_strtok();
@@ -98,8 +88,6 @@ void gsc_utils_ban();
 void gsc_utils_unban();
 void gsc_utils_strip();
 void gsc_utils_strstr();
-void gsc_utils_monotone();
-void gsc_utils_gettype();
 ////
 
 #endif

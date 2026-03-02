@@ -1,4 +1,4 @@
-#include "hook.h"
+#include "hook.hpp"
 
 void hook_jmp(int from, int to)
 {

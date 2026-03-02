@@ -1,4 +1,4 @@
-#include "gsc.h"
+#include "gsc.hpp"
 
 extern cvar_t *player_sprintTime;
 
@@ -400,43 +400,6 @@ void gsc_player_isonladder(scr_entref_t ref)
     Scr_AddBool(ps->pm_flags & PMF_LADDER ? qtrue : qfalse);
 }
 
-void gsc_player_noclip(scr_entref_t ref)
-{
-    int id = ref.entnum;
-    char *noclip;
-
-    if (!stackGetParams("s", &noclip))
-    {
-        stackError("gsc_player_noclip() argument is undefined or has a wrong type");
-        Scr_AddUndefined();
-        return;
-    }
-
-    if (id >= MAX_CLIENTS)
-    {
-        stackError("gsc_player_noclip() entity %i is not a player", id);
-        Scr_AddUndefined();
-        return;
-    }
-
-    gentity_t *entity = &g_entities[id];
-
-    if (!Q_stricmp(noclip, "on") || atoi(noclip))
-    {
-        entity->client->noclip = qtrue;
-    }
-    else if (!Q_stricmp(noclip, "off") || !Q_stricmp(noclip, "0"))
-    {
-        entity->client->noclip = qfalse;
-    }
-    else
-    {
-        entity->client->noclip = !entity->client->noclip;
-    }
-
-    Scr_AddBool(qtrue);
-}
-
 void gsc_player_ufo(scr_entref_t ref)
 {
     int id = ref.entnum;
@@ -499,73 +462,6 @@ void gsc_player_connectionlesspackettoclient(scr_entref_t ref)
     Scr_AddBool(qtrue);
 }
 
-void gsc_player_disableitemautopickup(scr_entref_t ref)
-{
-    int id = ref.entnum;
-
-    if (id >= MAX_CLIENTS)
-    {
-        stackError("gsc_player_disableitempickup() entity %i is not a player", id);
-        Scr_AddUndefined();
-        return;
-    }
-
-    int old_setting = !customPlayerState[id].noAutoPickup;
-    customPlayerState[id].noAutoPickup = true;
-
-    Scr_AddInt(old_setting);
-}
-
-void gsc_player_enableitemautopickup(scr_entref_t ref)
-{
-    int id = ref.entnum;
-
-    if (id >= MAX_CLIENTS)
-    {
-        stackError("gsc_player_enableitempickup() entity %i is not a player", id);
-        Scr_AddUndefined();
-        return;
-    }
-
-    int old_setting = !customPlayerState[id].noAutoPickup;
-    customPlayerState[id].noAutoPickup = false;
-
-    Scr_AddInt(old_setting);
-}
-
-void gsc_player_playscriptanimation(scr_entref_t ref)
-{
-    int id = ref.entnum;
-    int scriptAnimEventType;
-    int isContinue;
-    int force;
-
-    if (!stackGetParams("iii", &scriptAnimEventType, &isContinue, &force))
-    {
-        stackError("gsc_player_playscriptanimation() argument is undefined or has a wrong type");
-        Scr_AddUndefined();
-        return;
-    }
-
-    if (id >= MAX_CLIENTS)
-    {
-        stackError("gsc_player_playscriptanimation() entity %i is not a player", id);
-        Scr_AddUndefined();
-        return;
-    }
-
-    if (scriptAnimEventType < 0 || scriptAnimEventType >= NUM_ANIM_EVENTTYPES)
-    {
-        stackError("gsc_player_playscriptanimation() argument is not a valid scriptAnimEventType");
-        Scr_AddUndefined();
-        return;
-    }
-    
-    gentity_t *entity = &g_entities[id];
-
-    Scr_AddInt(BG_AnimScriptEvent(&entity->client->ps, (scriptAnimEventTypes_t)scriptAnimEventType, isContinue, force));
-}
-
 void gsc_player_isbot(scr_entref_t ref)
 {
     int id = ref.entnum;
@@ -596,18 +492,4 @@ void gsc_player_sethiddenfromscoreboard(scr_entref_t ref)
     customPlayerState[id].hiddenFromScoreboard = hidden;
 
     Scr_AddBool(true);
-}
-
-void gsc_player_ishiddenfromscoreboard(scr_entref_t ref)
-{
-    int id = ref.entnum;
-
-    if (id >= MAX_CLIENTS)
-    {
-        stackError("gsc_player_ishiddenfromscoreboard() entity %i is not a player", id);
-        Scr_AddUndefined();
-        return;
-    }
-
-    Scr_AddBool(customPlayerState[id].hiddenFromScoreboard);
 }

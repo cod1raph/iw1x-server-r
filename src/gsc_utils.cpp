@@ -1,4 +1,4 @@
-#include "gsc.h"
+#include "gsc.hpp"
 
 void gsc_utils_sendcommandtoclient()
 {
@@ -37,65 +37,6 @@ void gsc_utils_logprintconsole()
     Com_Printf("%s", str);
 
     Scr_AddBool(qtrue);
-}
-
-void gsc_utils_getsubstr()
-{
-    int end;
-    char c;
-    int i;
-    int source;
-    int start;
-    const char *string;
-    char tempString[1024];
-
-    string = Scr_GetString(0);
-    start = Scr_GetInt(1u);
-
-    if (Scr_GetNumParam() <= 2)
-        end = 0x7FFFFFFF;
-    else
-        end = Scr_GetInt(2u);
-
-    source = start;
-
-    for (i = 0; source < end; ++i)
-    {
-        if (i > 1023)
-            stackError("gsc_utils_getsubstr() string too long");
-
-        c = string[source];
-
-        if (!c)
-            break;
-
-        tempString[i] = c;
-        ++source;
-    }
-
-    tempString[i] = 0;
-    Scr_AddString(tempString);
-}
-
-void gsc_utils_getascii()
-{
-    char *str;
-
-    if (!stackGetParams("s", &str))
-    {
-        stackError("gsc_utils_getascii() argument is undefined or has a wrong type");
-        Scr_AddUndefined();
-        return;
-    }
-
-    if (!strlen(str))
-    {
-        stackError("gsc_utils_getascii() string length is 0");
-        Scr_AddUndefined();
-        return;
-    }
-
-    Scr_AddInt(str[0]);
 }
 
 void gsc_utils_toupper()
@@ -518,55 +459,4 @@ void gsc_utils_strstr()
     {
         Scr_AddBool(qfalse);
     }
-}
-
-void gsc_utils_monotone()
-{
-    char *input;
-
-    if(!stackGetParams("s", &input)) 
-    {
-        stackError("gsc_utils_monotone() argument is undefined or has a wrong type");
-        Scr_AddUndefined();
-        return;
-    }
-
-    char buffer[256];
-    strncpy(buffer, input, sizeof(buffer) - 1);
-    buffer[sizeof(buffer) - 1] = '\0';
-
-    char *src = buffer, *dst = buffer;
-    while (*src) {
-        if (*src == '^') {
-            if (*(src + 1) == '^' && (*(src + 2) >= '0' && *(src + 2) <= '7') && (*(src + 3) >= '0' && *(src + 3) <= '7')) {
-                src += 4;
-            }
-            else if (*(src + 1) == '^' && (*(src + 2) >= '0' && *(src + 2) <= '7')) {
-                src += 3;
-            }
-            else if (*(src + 1) >= '0' && *(src + 1) <= '7') {
-                src += 2;
-            } 
-            else {
-                *dst++ = *src++;
-            }
-        } else {
-            *dst++ = *src++;
-        }
-    }
-    *dst = '\0';
-
-    Scr_AddString(buffer);
-}
-
-void gsc_utils_gettype()
-{
-    if (Scr_GetNumParam() == 0)
-    {
-        stackError("gsc_utils_gettype() argument is undefined or has a wrong type");
-        Scr_AddUndefined();
-        return;
-    }
-
-    Scr_AddString(stackGetParamTypeAsString(0));
 }

@@ -1,4 +1,6 @@
-#include "iw1x.h"
+#include "shared.hpp"
+
+#include "hook.hpp"
 
 //// Cvars
 cvar_t *com_dedicated;
@@ -8,7 +10,6 @@ cvar_t *net_lanauthorize;
 cvar_t *sv_allowAnonymous;
 cvar_t *sv_allowDownload;
 cvar_t *sv_floodProtect;
-cvar_t *sv_fps;
 cvar_t *sv_master[MAX_MASTER_SERVERS];
 cvar_t *sv_maxclients;
 cvar_t *sv_maxRate;
@@ -33,29 +34,23 @@ cvar_t *sv_downloadForce;
 cvar_t *sv_fastDownload;
 cvar_t *sv_fastDownloadSpeed;
 cvar_t *sv_heartbeatDelay;
+cvar_t *sv_logHeartbeats;
 cvar_t *sv_spectatorNoclip;
 ////
 
 //// Game lib
 // Objects
 gentity_t *g_entities;
-gclient_t *g_clients;
 level_locals_t *level;
 
 // Functions
 G_Say_t G_Say;
-G_RegisterCvars_t G_RegisterCvars;
-G_AddEvent_t G_AddEvent;
-G_AddPredictableEvent_t G_AddPredictableEvent;
 trap_SendServerCommand_t trap_SendServerCommand;
 trap_GetConfigstringConst_t trap_GetConfigstringConst;
 trap_GetConfigstring_t trap_GetConfigstring;
 BG_GetNumWeapons_t BG_GetNumWeapons;
 BG_GetInfoForWeapon_t BG_GetInfoForWeapon;
 BG_GetWeaponIndexForName_t BG_GetWeaponIndexForName;
-BG_AnimationIndexForString_t BG_AnimationIndexForString;
-BG_AnimScriptEvent_t BG_AnimScriptEvent;
-BG_AddPredictableEventToPlayerstate_t BG_AddPredictableEventToPlayerstate;
 Scr_GetFunctionHandle_t Scr_GetFunctionHandle;
 Scr_GetNumParam_t Scr_GetNumParam;
 Scr_IsSystemActive_t Scr_IsSystemActive;
@@ -83,7 +78,6 @@ Scr_Error_t Scr_Error;
 Scr_ObjectError_t Scr_ObjectError;
 Scr_GetConstString_t Scr_GetConstString;
 Scr_ParamError_t Scr_ParamError;
-Q_strlwr_t Q_strlwr;
 Q_strupr_t Q_strupr;
 Q_strcat_t Q_strcat;
 Q_strncpyz_t Q_strncpyz;
@@ -92,18 +86,10 @@ StuckInClient_t StuckInClient;
 trap_Argv_t trap_Argv;
 ClientCommand_t ClientCommand;
 Com_SkipRestOfLine_t Com_SkipRestOfLine;
-Com_ParseRestOfLine_t Com_ParseRestOfLine;
-Com_ParseInt_t Com_ParseInt;
-Jump_Check_t Jump_Check;
-PM_GetEffectiveStance_t PM_GetEffectiveStance;
-PM_ClipVelocity_t PM_ClipVelocity;
 va_t va;
-trap_GetUserinfo_t trap_GetUserinfo;
 PM_NoclipMove_t PM_NoclipMove;
 G_LocalizedStringIndex_t G_LocalizedStringIndex;
 trap_SetConfigstring_t trap_SetConfigstring;
-trap_GetArchivedPlayerState_t trap_GetArchivedPlayerState;
-G_Error_t G_Error;
 Scr_GetPointerType_t Scr_GetPointerType;
 ////
 
@@ -156,11 +142,9 @@ cHook *hook_Com_Init;
 cHook *hook_DeathmatchScoreboardMessage;
 cHook *hook_GScr_LoadGameTypeScript;
 cHook *hook_PM_FlyMove;
-cHook *hook_SV_AddOperatorCommands;
 cHook *hook_SV_BeginDownload_f;
 cHook *hook_SV_SendClientGameState;
 cHook *hook_Sys_LoadDll;
-cHook *hook_Touch_Item_Auto;
 
 // See https://github.com/xtnded/codextended/blob/855df4fb01d20f19091d18d46980b5fdfa95a712/src/shared.c#L632
 #define MAX_VA_STRING 32000
@@ -187,24 +171,6 @@ char *custom_va(const char *format, ...)
     memcpy(buf, temp_buffer, len + 1);
     index += len + 1;
     return buf;
-}
-
-void sendMessageToClient_orServerConsole(client_t *cl, std::string message)
-{
-    std::string finalMessage;
-    if (cl)
-    {
-        finalMessage = "e \"";
-        finalMessage.append(message);
-        finalMessage.append("\"");
-        SV_SendServerCommand(cl, SV_CMD_CAN_IGNORE, finalMessage.c_str());
-    }
-    else
-    {
-        finalMessage = message;
-        finalMessage.append("\n");
-        Com_Printf(finalMessage.c_str());
-    }
 }
 
 qboolean FS_svrPak(const char *base)
@@ -274,7 +240,6 @@ void custom_Com_Init(char *commandLine)
     sv_allowAnonymous = Cvar_FindVar("sv_allowAnonymous");
     sv_allowDownload = Cvar_FindVar("sv_allowDownload");
     sv_floodProtect = Cvar_FindVar("sv_floodProtect");
-    sv_fps = Cvar_FindVar("sv_fps");
     sv_master[0] = Cvar_FindVar("sv_master1");
     sv_master[1] = Cvar_FindVar("sv_master2");
     sv_master[2] = Cvar_FindVar("sv_master3");
@@ -308,6 +273,7 @@ void custom_Com_Init(char *commandLine)
     sv_fastDownload = Cvar_Get("sv_fastDownload", "0", CVAR_ARCHIVE);
     sv_fastDownloadSpeed = Cvar_Get("sv_fastDownloadSpeed", std::to_string(MAX_DOWNLOAD_WINDOW).c_str(), CVAR_ARCHIVE);
     sv_heartbeatDelay = Cvar_Get("sv_heartbeatDelay", "30", CVAR_ARCHIVE);
+    sv_logHeartbeats = Cvar_Get("sv_logHeartbeats", "1", CVAR_ARCHIVE);
     sv_spectatorNoclip = Cvar_Get("sv_spectatorNoclip", "0", CVAR_ARCHIVE);
     ////
 }
@@ -409,18 +375,6 @@ const char* custom_FS_ReferencedPakChecksums(void)
     }
 
     return info;
-}
-
-void custom_SV_AddOperatorCommands()
-{
-    hook_SV_AddOperatorCommands->unhook();
-    void (*SV_AddOperatorCommands)();
-    *(int*)&SV_AddOperatorCommands = hook_SV_AddOperatorCommands->from;
-    SV_AddOperatorCommands();
-    hook_SV_AddOperatorCommands->hook();
-
-    Cmd_AddCommand("ban", ban);
-    Cmd_AddCommand("unban", unban);
 }
 
 void custom_SV_PacketEvent(netadr_t from, msg_t *msg)
@@ -564,8 +518,10 @@ void custom_SV_MasterHeartbeat(const char *hbname)
                     BigShort(adr[i].port)
                 );
             }
-
-            Com_Printf("Sending heartbeat to %s\n", sv_master[i]->string);
+            
+            if(sv_logHeartbeats->integer)
+                Com_Printf("Sending heartbeat to %s\n", sv_master[i]->string);
+            
             NET_OutOfBandPrint(NS_SERVER, adr[i], "heartbeat %s\n", hbname);
         }
     }
@@ -758,6 +714,114 @@ bool SVC_ApplyStatusLimit(netadr_t from)
     return false;
 }
 
+const char* NET_AdrToStringNoPort(netadr_t a)
+{
+    static char s[64];
+    
+    if(a.type == NA_LOOPBACK)
+        Com_sprintf(s, sizeof(s), "loopback");
+    else if(a.type == NA_BOT)
+        Com_sprintf(s, sizeof(s), "bot");
+    else if (a.type == NA_IP)
+        Com_sprintf(s, sizeof(s), "%i.%i.%i.%i", a.ip[0], a.ip[1], a.ip[2], a.ip[3]);
+    else
+        Com_sprintf(s, sizeof(s), "%02x%02x%02x%02x.%02x%02x%02x%02x%02x%02x",
+            a.ipx[0], a.ipx[1], a.ipx[2], a.ipx[3], a.ipx[4],
+            a.ipx[5], a.ipx[6], a.ipx[7], a.ipx[8], a.ipx[9]
+        );
+    
+    return s;
+}
+bool SV_IsBannedIp(netadr_t adr)
+{
+	bool banned;
+	char *file;
+	const char *token;
+	const char *text;
+
+	if(FS_ReadFile(BAN_LIST_NAME, (void **)&file) < 0)
+		return false;
+
+	text = file;
+	banned = false;
+
+	while (1)
+	{
+		token = Com_Parse(&text);
+		if(!token[0])
+			break;
+
+		if (!strcmp(token, NET_AdrToStringNoPort(adr)))
+		{
+			banned = true;
+			break;
+		}
+
+		Com_SkipRestOfLine(&text);
+	}
+
+	FS_FreeFile(file);
+	return banned;
+}
+// See https://github.com/voron00/CoD2rev_Server/blob/d67bc532fd493c0291c2fdef2fb9baa12c1c906b/src/server/sv_client_mp.cpp#L168
+void SV_BanClient(client_t *cl)
+{
+    int file;
+	char cleanName[64];
+    char ip[16];
+
+    if (cl->netchan.remoteAddress.type == NA_LOOPBACK)
+	{
+		SV_SendServerCommand(NULL, SV_CMD_CAN_IGNORE, "e \"EXE_CANNOTKICKHOSTPLAYER\"");
+		return;
+	}
+    
+    snprintf(ip, sizeof(ip), "%d.%d.%d.%d",
+        cl->netchan.remoteAddress.ip[0],
+        cl->netchan.remoteAddress.ip[1],
+        cl->netchan.remoteAddress.ip[2],
+        cl->netchan.remoteAddress.ip[3]
+    );
+
+    if (SV_IsBannedIp(cl->netchan.remoteAddress))
+	{
+        Com_Printf("This IP (%s) is already banned\n", ip);
+		return;
+	}
+
+    if(FS_FOpenFileByMode(BAN_LIST_NAME, &file, FS_APPEND) < 0)
+		return;
+
+    Q_strncpyz(cleanName, cl->name, sizeof(cleanName));
+	Q_CleanStr(cleanName);
+
+	FS_Printf(file, "%s %s\r\n", ip, cleanName);
+	FS_FCloseFile(file);
+
+	SV_DropClient(cl, "EXE_PLAYERKICKED");
+	cl->lastPacketTime = svs.time;
+}
+static void custom_SV_BanNum_f(void)
+{
+    client_t *cl;
+    
+    if (!com_sv_running->integer)
+	{
+		Com_Printf("Server is not running.\n");
+		return;
+	}
+    
+    if (Cmd_Argc() != 2)
+	{
+        Com_Printf("Usage: banClient <client number>\n");
+		return;
+	}
+    
+    cl = SV_GetPlayerByNum();
+    if(cl)
+        SV_BanClient(cl);
+}
+
 // See https://github.com/voron00/CoD2rev_Server/blob/b012c4b45a25f7f80dc3f9044fe9ead6463cb5c6/src/server/sv_client_mp.cpp#L1685
 void SV_AuthorizeRequest(netadr_t from, int challenge)
 {
@@ -897,89 +961,9 @@ void hook_SV_DirectConnect(netadr_t from)
         return;
     }
     
-    bool unbanned;
-    char* userinfo;
-    char ip[16];
-    std::stringstream ss;
-    std::string argBackup;
-    
-    unbanned = false;
-    userinfo = Cmd_Argv(1);
-    ss << "connect \"" << userinfo << "\"";
-    argBackup = ss.str();
-    snprintf(ip, sizeof(ip), "%d.%d.%d.%d", from.ip[0], from.ip[1], from.ip[2], from.ip[3]);
-
-    auto banInfo = getBanInfoForIp(ip);
-    if(std::get<0>(banInfo) == true) // banned
-    {
-        time_t current_time = time(NULL);
-        std::string remainingTime;
-        
-        if(std::get<1>(banInfo) != -1) // duration
-        {
-            int elapsed_seconds = difftime(current_time, std::get<2>(banInfo)); // ban date
-            int remaining_seconds = std::get<1>(banInfo) - elapsed_seconds;
-            if (remaining_seconds <= 0)
-            {
-                Cbuf_ExecuteText(EXEC_APPEND, va("unban %s\n", ip));
-                unbanned = true;
-            }
-            else
-            {
-                int days = remaining_seconds / (60 * 60 * 24);
-                int hours = (remaining_seconds % (60 * 60 * 24)) / (60 * 60);
-                int minutes = (remaining_seconds % (60 * 60)) / 60;
-                int seconds = remaining_seconds % 60;
-
-                ss.str(std::string());
-                ss.clear();
-
-                if (days > 0)
-                {
-                    ss << days << " day" << (days > 1 ? "s" : "");
-                    if(hours > 0)
-                    ss << ", " << hours << " hour" << (hours > 1 ? "s" : "");
-                }
-                else if (hours > 0)
-                {
-                    ss << hours << " hour" << (hours > 1 ? "s" : "");
-                    if(minutes > 0)
-                    ss << ", " << minutes << " minute" << (minutes > 1 ? "s" : "");
-                }
-                else if(minutes > 0)
-                    ss << minutes << " minute" << (minutes > 1 ? "s" : "");
-                else
-                    ss << seconds << " second" << (seconds > 1 ? "s" : "");
-
-                remainingTime = ss.str();
-            }
-        }
-
-        if (!unbanned)
-        {
-            std::string banInfoMessage = "error\nBanned IP";
-            if (std::get<3>(banInfo) != "none")
-            {
-                banInfoMessage.append(" - Reason: ");
-                banInfoMessage.append(std::get<3>(banInfo));
-            }
-            if (!remainingTime.empty())
-            {
-                banInfoMessage.append(" - Remaining: ");
-                banInfoMessage.append(remainingTime);
-            }
-            
-            Com_Printf("rejected connection from banned IP %s\n", NET_AdrToString(from));
-            NET_OutOfBandPrint(NS_SERVER, from, banInfoMessage.c_str());
-            return;
-        }
-    }
-
-    if(unbanned)
-        Cmd_TokenizeString(argBackup.c_str());
-
     if (*sv_connectMessage->string && sv_connectMessageChallenges->integer)
     {
+        char* userinfo = Cmd_Argv(1);
         int userinfoChallenge = atoi(Info_ValueForKey(userinfo, "challenge"));
         for (int i = 0; i < MAX_CHALLENGES; i++)
         {
@@ -1018,7 +1002,25 @@ void hook_SV_AuthorizeIpPacket(netadr_t from)
         Com_DPrintf("SV_AuthorizeIpPacket: rate limit exceeded, dropping request\n");
         return;
     }
-
+    
+    int challenge = atoi(Cmd_Argv(1));
+    for (int i = 0; i < MAX_CHALLENGES; i++)
+	{
+        if (svs.challenges[i].challenge == challenge)
+		{
+            if (SV_IsBannedIp(svs.challenges[i].adr))
+            {
+                Com_Printf("rejected connection from banned IP %s\n", NET_AdrToStringNoPort(svs.challenges[i].adr));
+                NET_OutOfBandPrint( NS_SERVER, svs.challenges[i].adr, "error\nYou are banned from this server");
+                // clear the challenge record so it won't timeout and let them through
+                memset(&svs.challenges[i], 0, sizeof(svs.challenges[i]));
+                return;
+            }
+            
+            break;
+		}
+	}
+    
     SV_AuthorizeIpPacket(from);
 }
 
@@ -1091,9 +1093,9 @@ void custom_SVC_Status(netadr_t from)
     
     g_password = Cvar_VariableString("g_password");
     Info_SetValueForKey(infostring, "pswrd", va("%i", *g_password ? 1 : 0));
-
-    // Inform about fs_game usage, by default for player's convenience
-    Info_SetValueForKey(infostring, "fs_game", va("%s", *fs_game->string ? fs_game->string : "0"));
+    
+    if(*fs_game->string)
+        Info_SetValueForKey(infostring, "fs_game", va("%s", fs_game->string));
     
     NET_OutOfBandPrint(NS_SERVER, from, "statusResponse\n%s\n%s", infostring, status);
 }
@@ -1247,10 +1249,9 @@ void custom_SV_SendClientGameState(client_t *client)
             MSG_WriteByte(&msg, svc_configstring);
             MSG_WriteShort(&msg, start);
             std::string csCopy(sv.configstrings[start]);
+            
             if (start == 1)
             {
-                bool clientUsing1_1x = *Info_ValueForKey(client->userinfo, "xtndedbuild");
-
                 if (!sv_allowDownload->integer)
                 {
                     /*
@@ -1271,6 +1272,7 @@ void custom_SV_SendClientGameState(client_t *client)
                         1.1x mod requires download forcing, even if player enables cl_allowDownload by himself before joining.
                         See https://github.com/xtnded/codextended-client/blob/45af251518a390ab08b1c8713a6a1544b70114a1/cl_main.cpp#L41
                         */
+                        bool clientUsing1_1x = *Info_ValueForKey(client->userinfo, "xtndedbuild");
                         if(clientUsing1_1x)
                             csCopy.append("\\cl_allowDownload\\1");
                     }
@@ -1281,7 +1283,7 @@ void custom_SV_SendClientGameState(client_t *client)
         }
     }
     
-    // TODO: clean
+    // TODO: cleanup
     memset(&nullstate, 0, sizeof(nullstate));
     int *base = (int*)(0x08357680);
     for (start = 0; start < MAX_GENTITIES; start++)
@@ -1353,515 +1355,6 @@ void Scr_CodeCallback_Error(qboolean terminal, qboolean emit, const char *intern
     }
 }
 
-////// Custom operator commands
-//// ban & unban
-std::tuple<bool, int, int, std::string> getBanInfoForIp(char* ip)
-{
-    char *file;
-    std::string token;
-    const char *text;
-    std::tuple<bool, int, int, std::string> banInfo;
-
-    banInfo = std::make_tuple(false, 0, 0, "");
-
-    if(FS_ReadFile("ban.txt", (void **)&file) < 0)
-        return banInfo;
-
-    text = file;
-    while (1)
-    {
-        token = Com_Parse(&text);
-        if(token.empty())
-            break;
-
-        if (!strcmp(token.c_str(), ip))
-        {
-            std::get<0>(banInfo) = true;                // banned
-            Com_Parse(&text);                           // player name
-            std::get<1>(banInfo) = Com_ParseInt(&text); // duration
-            std::get<2>(banInfo) = Com_ParseInt(&text); // ban date
-            std::get<3>(banInfo) = Com_Parse(&text);    // reason
-            break;
-        }
-        Com_SkipRestOfLine(&text);
-    }
-    FS_FreeFile(file);
-    return banInfo;
-}
-
-/*
--i: ip
--n: banned client number
--r: reason
--d: duration
--a: admin client number
-*/
-const std::array<std::string, 5> banParameters = {"-i", "-n", "-r", "-d", "-a"};
-const std::array<std::string, 2> unbanParameters = {"-i", "-a"};
-
-template <std::size_t N>
-bool isValidBanParameter(std::string toCheck, std::array<std::string, N> parameters)
-{
-    for (const std::string&parameter : parameters)
-    {
-        if(toCheck == parameter)
-            return true;
-    }
-    return false;
-}
-
-static void ban()
-{
-    if (!com_sv_running->integer)
-    {
-        Com_Printf("Server is not running.\n");
-        return;
-    }
-
-    if (Cmd_Argc() < 3)
-    {
-        Com_Printf("Usage: ban (-i <IP address> | -n <client number>) [-r reason] [-d duration]\n");
-        Com_Printf("Notes: Use h for hours or d for days\n");
-        return;
-    }
-
-    std::vector<std::string> argvList;
-    std::map<std::string, std::string> parsedParameters;
-    std::string infoMessage;
-    bool useIp = false;
-    bool useClientnum = false;
-    int file;
-    bool clAdmin_searched = false;
-    client_t *clToBan;
-    client_t *clAdmin;
-    char ip[16];
-    char cleanName[64] = "n/a";
-    time_t current_time;
-    int duration = -1;
-    std::string duration_drop;
-    std::string reason_log = "none";
-    std::string reason_drop;
-
-    // Directly store all the argv to be able to use Cmd_TokenizeString before the end of the parse
-    for (int i = 1; i < Cmd_Argc(); i++)
-    {
-        std::string argv = Cmd_Argv(i);
-        argvList.push_back(argv);
-    }
-    
-    //// Parse and store the parameters
-    for (std::size_t i = 0; i < argvList.size(); i++)
-    {
-        std::string argv = argvList[i];
-        if (isValidBanParameter(argv, banParameters)) // Found an option
-        {
-            if (parsedParameters.find(argv) == parsedParameters.end())
-            {
-                // Parse the argument
-                std::string value;
-                for (std::size_t j = i+1; j < argvList.size(); j++)
-                {
-                    std::string argv_next = argvList[j];
-                    if (!isValidBanParameter(argv_next, banParameters))
-                    {
-                        if(j != i+1)
-                            value.append(" ");
-                        value.append(argv_next);
-                    }
-                    else
-                        break;
-                }
-                // Store the pair
-                if(!value.empty())
-                    parsedParameters[argv] = value;
-
-                /*
-                Check if got admin client after first storage and only once
-                because it should be passed as first parameter from gsc
-                so you can redirect the error messages since the beginning
-                */
-                if (!clAdmin_searched)
-                {
-                    auto adminParam = parsedParameters.find("-a");
-                    if (adminParam != parsedParameters.end())
-                    {
-                        clAdmin = &svs.clients[std::stoi(adminParam->second)];
-                    }
-                    clAdmin_searched = true;
-                }
-            }
-            else
-            {
-                infoMessage = "Duplicated option " + argv;
-                sendMessageToClient_orServerConsole(clAdmin, infoMessage);
-                return;
-            }
-        }
-        else if (argv[0] == '-' && !isValidBanParameter(argv, banParameters))
-        {
-            infoMessage = "Unrecognized option " + argv;
-            sendMessageToClient_orServerConsole(clAdmin, infoMessage);
-            return;
-        }
-    }
-    ////
-    
-    //// Check the parameters
-    // Client number
-    if (parsedParameters.find("-n") != parsedParameters.end())
-    {
-        // Check if specified both an IP and a client number
-        if (parsedParameters.find("-i") != parsedParameters.end())
-        {
-            infoMessage = "Don't use both an IP and a client number";
-            sendMessageToClient_orServerConsole(clAdmin, infoMessage);
-            return;
-        }
-        useClientnum = true;
-    }
-
-    // IP
-    auto ipParam = parsedParameters.find("-i");
-    if (ipParam != parsedParameters.end())
-    {
-        struct sockaddr_in sa;
-        if (!inet_pton(AF_INET, ipParam->second.c_str(), &(sa.sin_addr)))
-        {
-            infoMessage = "Invalid IP address " + ipParam->second;
-            sendMessageToClient_orServerConsole(clAdmin, infoMessage);
-            return;
-        }
-        useIp = true;
-        std::strcpy(ip, ipParam->second.c_str());
-    }
-
-    if (!useClientnum && !useIp)
-    {
-        infoMessage = "Use an IP or a client number";
-        sendMessageToClient_orServerConsole(clAdmin, infoMessage);
-        return;
-    }
-
-    // Duration
-    auto durationParam = parsedParameters.find("-d");
-    if (durationParam != parsedParameters.end())
-    {
-        char durationParam_lastChar = durationParam->second.back();
-        if (durationParam_lastChar != 'h' && durationParam_lastChar != 'd')
-        {
-            infoMessage = "Invalid duration parameter " + durationParam->second;
-            sendMessageToClient_orServerConsole(clAdmin, infoMessage);
-            return;
-        }
-        else
-        {
-            durationParam->second.pop_back(); // Remove unit indicator
-            if (durationParam->second.empty())
-            {
-                infoMessage = "Invalid duration parameter " + durationParam->second;
-                sendMessageToClient_orServerConsole(clAdmin, infoMessage);
-                return;
-            }
-            else
-            {
-                for (int i = 0; durationParam->second[i]; i++)
-                {
-                    if (durationParam->second[i] < '0' || durationParam->second[i] > '9')
-                    {
-                        infoMessage = "Invalid duration parameter " + durationParam->second;
-                        sendMessageToClient_orServerConsole(clAdmin, infoMessage);
-                        return;
-                    }
-                }
-                duration = std::stoi(durationParam->second);
-            }
-        }
-        if(durationParam_lastChar == 'h')
-        {
-            duration_drop = durationParam->second + " hour";
-            if(duration > 1)
-                duration_drop.append("s");
-            duration *= 3600;
-        }
-        else if(durationParam_lastChar == 'd')
-        {
-            duration_drop = durationParam->second + " day";
-            if(duration > 1)
-                duration_drop.append("s");
-            duration *= 86400;
-        }
-    }
-
-    // Reason
-    auto reasonParam = parsedParameters.find("-r");
-    if (reasonParam != parsedParameters.end())
-    {
-        reason_log = reasonParam->second.c_str();
-        reason_drop = "Ban reason: " + reasonParam->second;
-    }
-
-    // Add duration to drop message after reason
-    if (!duration_drop.empty())
-    {
-        if(reason_drop.empty())
-        {
-            reason_drop = "Ban duration: " + duration_drop;
-        }
-        else
-        {
-            reason_drop.append(" - ");
-            reason_drop.append("Duration: ");
-            reason_drop.append(duration_drop);
-        }
-    }
-    else if (reason_drop.empty())
-    {
-        reason_drop = "EXE_PLAYERKICKED";
-    }
-    ////
-
-    // Find the player
-    if (useClientnum)
-    {
-        clToBan = &svs.clients[std::stoi(parsedParameters.find("-n")->second)];
-        if (!clToBan)
-        {
-            infoMessage = "Couldn't find player by num " + parsedParameters.find("-n")->second;
-            sendMessageToClient_orServerConsole(clAdmin, infoMessage);
-            return;
-        }
-        else
-        {
-            snprintf(ip, sizeof(ip), "%d.%d.%d.%d",
-                clToBan->netchan.remoteAddress.ip[0],
-                clToBan->netchan.remoteAddress.ip[1],
-                clToBan->netchan.remoteAddress.ip[2],
-                clToBan->netchan.remoteAddress.ip[3]
-            );
-        }
-    }
-    else if (useIp)
-    {
-        int i;
-        client_t *clCheck;
-        for (i = 0, clCheck = svs.clients; i < sv_maxclients->integer; i++, clCheck++)
-        {
-            if (clCheck->state > CS_CONNECTED)
-            {
-                char ip_check[16];
-                snprintf(ip_check, sizeof(ip_check), "%d.%d.%d.%d",
-                    clCheck->netchan.remoteAddress.ip[0],
-                    clCheck->netchan.remoteAddress.ip[1],
-                    clCheck->netchan.remoteAddress.ip[2],
-                    clCheck->netchan.remoteAddress.ip[3]
-                );
-                
-                if (!strcmp(ip_check, ip))
-                {
-                    clToBan = clCheck;
-                    break;
-                }
-            }
-        }
-    }
-    
-    auto banInfo = getBanInfoForIp(ip);
-    if(std::get<0>(banInfo) == true) // banned
-    {
-        std::ostringstream oss;
-        oss << "This IP (" << ip << ") is already banned";
-        infoMessage = oss.str();
-        sendMessageToClient_orServerConsole(clAdmin, infoMessage);
-        return;
-    }
-    
-    if (clToBan)
-        Q_strncpyz(cleanName, clToBan->name, sizeof(cleanName));
-    
-    // Add IP to ban.txt
-    if (FS_FOpenFileByMode("ban.txt", &file, FS_APPEND) < 0)
-    {
-        infoMessage = "Couldn't open ban.txt";
-        sendMessageToClient_orServerConsole(clAdmin, infoMessage);
-        return;
-    }
-    else
-    {
-        current_time = time(NULL);
-        FS_Write(file, "\"%s\" \"%s\" \"%i\" \"%i\" \"%s\"\r\n", ip, cleanName, duration, current_time, reason_log.c_str());
-        FS_FCloseFile(file);
-    }
-
-    // Disconnect the player
-    if (clToBan)
-    {
-        SV_DropClient(clToBan, reason_drop.c_str());
-        clToBan->lastPacketTime = svs.time;
-    }
-}
-static void unban()
-{
-    if (!com_sv_running->integer)
-    {
-        Com_Printf("Server is not running.\n");
-        return;
-    }
-
-    if (Cmd_Argc() < 2)
-    {
-        Com_Printf("Usage: unban -i <IP address>\n");
-        return;
-    }
-    
-    std::vector<std::string> argvList;
-    std::map<std::string, std::string> parsedParameters;
-    std::string infoMessage;
-    bool clAdmin_searched = false;
-    client_t *clAdmin;
-    char *file;
-    int fileSize;
-    char *line;
-    std::string token;
-    bool found = false;
-    char *text;
-    std::string ip;
-    
-    // Directly store all the argv to be able to use Cmd_TokenizeString before the end of the parse
-    for (int i = 1; i < Cmd_Argc(); i++)
-    {
-        std::string argv = Cmd_Argv(i);
-        argvList.push_back(argv);
-    }
-
-    //// Parse and store the parameters
-    for (std::size_t i = 0; i < argvList.size(); i++)
-    {
-        std::string argv = argvList[i];
-        if (isValidBanParameter(argv, unbanParameters)) // Found an option
-        {
-            if (parsedParameters.find(argv) == parsedParameters.end())
-            {
-                // Parse the argument
-                std::string value;
-                for (std::size_t j = i+1; j < argvList.size(); j++)
-                {
-                    std::string argv_next = argvList[j];
-                    if (!isValidBanParameter(argv_next, unbanParameters))
-                    {
-                        if(j != i+1)
-                            value.append(" ");
-                        value.append(argv_next);
-                    }
-                    else
-                        break;
-                }
-                // Store the pair
-                if(!value.empty())
-                    parsedParameters[argv] = value;
-
-                /*
-                Check if got admin client after first storage and only once
-                because it should be passed as first parameter from gsc
-                so you can redirect the error messages since the beginning
-                */
-                if (!clAdmin_searched)
-                {
-                    auto adminParam = parsedParameters.find("-a");
-                    if (adminParam != parsedParameters.end())
-                    {
-                        clAdmin = &svs.clients[std::stoi(adminParam->second)];
-                    }
-                    clAdmin_searched = true;
-                }
-            }
-            else
-            {
-                infoMessage = "Duplicated option " + argv;
-                sendMessageToClient_orServerConsole(clAdmin, infoMessage);
-                return;
-            }
-        }
-        else if (argv[0] == '-' && !isValidBanParameter(argv, unbanParameters))
-        {
-            infoMessage = "Unrecognized option " + argv;
-            sendMessageToClient_orServerConsole(clAdmin, infoMessage);
-            return;
-        }
-    }
-    ////
-
-    //// Check the parameters
-    // IP
-    auto ipParam = parsedParameters.find("-i");
-    if (ipParam != parsedParameters.end())
-    {
-        struct sockaddr_in sa;
-        if(!inet_pton(AF_INET, ipParam->second.c_str(), &(sa.sin_addr)))
-        {
-            infoMessage = "Invalid IP address " + ipParam->second;
-            sendMessageToClient_orServerConsole(clAdmin, infoMessage);
-            return;
-        }
-        ip = ipParam->second;
-    }
-    else
-    {
-        infoMessage = "Specify an IP address";
-        sendMessageToClient_orServerConsole(clAdmin, infoMessage);
-        return;
-    }
-    ////
-    
-    // Remove IP from ban.txt
-    fileSize = FS_ReadFile("ban.txt", (void **)&file);
-    if (fileSize < 0)
-    {
-        infoMessage = "Couldn't read ban.txt";
-        sendMessageToClient_orServerConsole(clAdmin, infoMessage);
-        return;        
-    }
-    
-    text = file;
-    while (1)
-    {
-        line = text;
-        token = Com_Parse((const char **)&text);
-        if(token.empty())
-            break;
-
-        if(token == ip)
-            found = true;
-
-        Com_SkipRestOfLine((const char **)&text);
-
-        if (found)
-        {
-            memmove((unsigned char *)line, (unsigned char *)text, fileSize - (text - file) + 1);
-            fileSize -= text - line;
-            text = line;
-            break;
-        }
-    }
-
-    FS_WriteFile("ban.txt", file, fileSize);
-    FS_FreeFile(file);
-
-    if (found)
-    {
-        infoMessage = "Unbanned IP " + ip;
-        sendMessageToClient_orServerConsole(clAdmin, infoMessage);
-    }
-    else
-    {
-        std::stringstream ss;
-        ss << "IP " << ip << " not found";
-        infoMessage = ss.str();
-        sendMessageToClient_orServerConsole(clAdmin, infoMessage);
-    }
-}
-////
-//////
-
 int custom_MSG_ReadBitsCompress(const byte* input, byte* outputBuf, int readsize, int outputBufSize)
 {
     readsize = readsize * 8;
@@ -1922,17 +1415,20 @@ void custom_SV_ExecuteClientMessage(client_t *cl, msg_t *msg)
                     SV_SendClientSnapshot(cl);
                     cl->state = CS_ZOMBIE;
                 }
+
                 if(c == clc_move)
                     SV_UserMove(cl, &decompressMsg, 1);
                 else if(c == clc_moveNoDelta)
                     SV_UserMove(cl, &decompressMsg, 0);
                 else if(c != clc_EOF)
                     Com_Printf("WARNING: bad command byte %i for client %i\n", c, cl - svs.clients);
+                
                 return;
             }
 
             if(!SV_ClientCommand(cl, &decompressMsg))
                 return;
+
         } while (cl->state != CS_ZOMBIE);
     }
     else if ((cl->serverId & 0xF0) == (sv_serverId_value & 0xF0))
@@ -2268,10 +1764,10 @@ void custom_SV_SendMessageToClient(msg_t *msg, client_t *client)
     
     memcpy(svCompressBuf, msg->data, 4);
     compressedSize = MSG_WriteBitsCompress(msg->data + 4, svCompressBuf + 4, msg->cursize - 4) + 4;
-    if (client->dropReason)
-    {
+
+    if(client->dropReason)
         SV_DropClient(client, client->dropReason);
-    }
+
     client->frames[client->netchan.outgoingSequence & PACKET_MASK].messageSize = compressedSize;
     client->frames[client->netchan.outgoingSequence & PACKET_MASK].messageSent = svs.time;
     client->frames[client->netchan.outgoingSequence & PACKET_MASK].messageAcked = -1;
@@ -2295,13 +1791,11 @@ void custom_SV_SendMessageToClient(msg_t *msg, client_t *client)
         client->rateDelayed = qtrue;
     }
     client->nextSnapshotTime = svs.time + rateMsec;
-    if (client->state != CS_ACTIVE)
-    {
-        if (!*client->downloadName && client->nextSnapshotTime < svs.time + 1000)
-        {
+
+    if(client->state != CS_ACTIVE)
+        if(!*client->downloadName && client->nextSnapshotTime < svs.time + 1000)
             client->nextSnapshotTime = svs.time + 1000;
-        }
-    }
+
     sv.bpsTotalBytes += compressedSize;
 }
 
@@ -2330,10 +1824,8 @@ qboolean custom_SV_ClientCommand(client_t *cl, msg_t *msg)
         return qfalse;
     }
     
-    if (!I_strncmp("score", s, 5) || !I_strncmp("mr ", s, 3) || !I_strncmp("userinfo ", s, 9) || !I_strncmp("ufo", s, 3))
-    {
+    if(!I_strncmp("score", s, 5) || !I_strncmp("mr ", s, 3) || !I_strncmp("userinfo ", s, 9) || !I_strncmp("ufo", s, 3))
         floodprotect = qfalse;
-    }
     
     if (CS_PRIMED < cl->state && sv_floodProtect->integer && svs.time < cl->nextReliableTime && floodprotect)
     {
@@ -2448,21 +1940,6 @@ qboolean hook_StuckInClient(gentity_s *self)
     if(!g_playerEject->integer)
         return qfalse;
     return StuckInClient(self);
-}
-
-void custom_Touch_Item_Auto(gentity_t *item, gentity_t *entity, int touch)
-{
-    int clientNum = entity->client->ps.clientNum;
-    client_t *client = &svs.clients[clientNum];
-
-    if(customPlayerState[clientNum].noAutoPickup && !(client->lastUsercmd.buttons & KEY_MASK_USE))
-        return;
-
-    hook_Touch_Item_Auto->unhook();
-    void (*Touch_Item_Auto)(gentity_t * item, gentity_t * entity, int touch);
-    *(int*)&Touch_Item_Auto = hook_Touch_Item_Auto->from;
-    Touch_Item_Auto(item, entity, touch);
-    hook_Touch_Item_Auto->hook();
 }
 
 void custom_DeathmatchScoreboardMessage(gentity_t *ent)
@@ -2614,7 +2091,6 @@ void *custom_Sys_LoadDll(const char *name, char *fqpath, int (**entryPoint)(int,
     ////
 
     // Objects
-    g_clients = (gclient_t*)dlsym(libHandle, "g_clients");
     g_entities = (gentity_t*)dlsym(libHandle, "g_entities");
     level = (level_locals_t*)dlsym(libHandle, "level");
 
@@ -2624,8 +2100,6 @@ void *custom_Sys_LoadDll(const char *name, char *fqpath, int (**entryPoint)(int,
     trap_Argv = (trap_Argv_t)dlsym(libHandle, "trap_Argv");
     ClientCommand = (ClientCommand_t)dlsym(libHandle, "ClientCommand");
     Com_SkipRestOfLine = (Com_SkipRestOfLine_t)dlsym(libHandle, "Com_SkipRestOfLine");
-    Com_ParseRestOfLine = (Com_ParseRestOfLine_t)dlsym(libHandle, "Com_ParseRestOfLine");
-    Com_ParseInt = (Com_ParseInt_t)dlsym(libHandle, "Com_ParseInt");
     Scr_GetFunction = (Scr_GetFunction_t)dlsym(libHandle, "Scr_GetFunction");
     Scr_GetMethod = (Scr_GetMethod_t)dlsym(libHandle, "Scr_GetMethod");
     trap_SendServerCommand = (trap_SendServerCommand_t)dlsym(libHandle, "trap_SendServerCommand");
@@ -2638,17 +2112,11 @@ void *custom_Sys_LoadDll(const char *name, char *fqpath, int (**entryPoint)(int,
     Scr_GetConstString = (Scr_GetConstString_t)dlsym(libHandle, "Scr_GetConstString");
     Scr_ParamError = (Scr_ParamError_t)dlsym(libHandle, "Scr_ParamError");
     G_Say = (G_Say_t)dlsym(libHandle, "G_Say");
-    G_RegisterCvars = (G_RegisterCvars_t)dlsym(libHandle, "G_RegisterCvars");
-    G_AddEvent = (G_AddEvent_t)dlsym(libHandle, "G_AddEvent");
-    G_AddPredictableEvent = (G_AddPredictableEvent_t)dlsym(libHandle, "G_AddPredictableEvent");
     trap_GetConfigstringConst = (trap_GetConfigstringConst_t)dlsym(libHandle, "trap_GetConfigstringConst");
     trap_GetConfigstring = (trap_GetConfigstring_t)dlsym(libHandle, "trap_GetConfigstring");
     BG_GetNumWeapons = (BG_GetNumWeapons_t)dlsym(libHandle, "BG_GetNumWeapons");
     BG_GetInfoForWeapon = (BG_GetInfoForWeapon_t)dlsym(libHandle, "BG_GetInfoForWeapon");
     BG_GetWeaponIndexForName = (BG_GetWeaponIndexForName_t)dlsym(libHandle, "BG_GetWeaponIndexForName");
-    BG_AnimationIndexForString = (BG_AnimationIndexForString_t)dlsym(libHandle, "BG_AnimationIndexForString");
-    BG_AnimScriptEvent = (BG_AnimScriptEvent_t)dlsym(libHandle, "BG_AnimScriptEvent");
-    BG_AddPredictableEventToPlayerstate = (BG_AddPredictableEventToPlayerstate_t)dlsym(libHandle, "BG_AddPredictableEventToPlayerstate");
     Scr_IsSystemActive = (Scr_IsSystemActive_t)dlsym(libHandle, "Scr_IsSystemActive");
     Scr_GetInt = (Scr_GetInt_t)dlsym(libHandle, "Scr_GetInt");
     Scr_GetString = (Scr_GetString_t)dlsym(libHandle, "Scr_GetString");
@@ -2665,21 +2133,14 @@ void *custom_Sys_LoadDll(const char *name, char *fqpath, int (**entryPoint)(int,
     Scr_AddObject = (Scr_AddObject_t)dlsym(libHandle, "Scr_AddObject");
     Scr_LoadScript = (Scr_LoadScript_t)dlsym(libHandle, "Scr_LoadScript");
     StuckInClient = (StuckInClient_t)dlsym(libHandle, "StuckInClient");
-    Q_strlwr = (Q_strlwr_t)dlsym(libHandle, "Q_strlwr");
     Q_strupr = (Q_strupr_t)dlsym(libHandle, "Q_strupr");
     Q_strcat = (Q_strcat_t)dlsym(libHandle, "Q_strcat");
     Q_strncpyz = (Q_strncpyz_t)dlsym(libHandle, "Q_strncpyz");
     Q_CleanStr = (Q_CleanStr_t)dlsym(libHandle, "Q_CleanStr");
-    Jump_Check = (Jump_Check_t)((int)dlsym(libHandle, "_init") + 0x76F4);
-    PM_GetEffectiveStance = (PM_GetEffectiveStance_t)dlsym(libHandle, "PM_GetEffectiveStance");
-    PM_ClipVelocity = (PM_ClipVelocity_t)dlsym(libHandle, "PM_ClipVelocity");
     va = (va_t)dlsym(libHandle, "va");
-    trap_GetUserinfo = (trap_GetUserinfo_t)dlsym(libHandle, "trap_GetUserinfo");
     PM_NoclipMove = (PM_NoclipMove_t)((int)dlsym(libHandle, "_init") + 0x8300);
     G_LocalizedStringIndex = (G_LocalizedStringIndex_t)dlsym(libHandle, "G_LocalizedStringIndex");
     trap_SetConfigstring = (trap_SetConfigstring_t)dlsym(libHandle, "trap_SetConfigstring");
-    trap_GetArchivedPlayerState = (trap_GetArchivedPlayerState_t)dlsym(libHandle, "trap_GetArchivedPlayerState");
-    G_Error = (G_Error_t)dlsym(libHandle, "G_Error");
     Scr_GetPointerType = (Scr_GetPointerType_t)dlsym(libHandle, "Scr_GetPointerType");
     ////
 
@@ -2711,8 +2172,6 @@ void *custom_Sys_LoadDll(const char *name, char *fqpath, int (**entryPoint)(int,
     hook_GScr_LoadGameTypeScript->hook();
     hook_ClientEndFrame = new cHook((int)dlsym(libHandle, "ClientEndFrame"), (int)custom_ClientEndFrame);
     hook_ClientEndFrame->hook();
-    hook_Touch_Item_Auto = new cHook((int)dlsym(libHandle, "Touch_Item_Auto"), (int)custom_Touch_Item_Auto);
-    hook_Touch_Item_Auto->hook();
     hook_DeathmatchScoreboardMessage = new cHook((int)dlsym(libHandle, "DeathmatchScoreboardMessage"), (int)custom_DeathmatchScoreboardMessage);
     hook_DeathmatchScoreboardMessage->hook();
     hook_PM_FlyMove = new cHook((int)dlsym(libHandle, "_init") + 0x79C8, (int)custom_PM_FlyMove);
@@ -2777,6 +2236,7 @@ class iw1x
         hook_jmp(0x08086e08, (int)custom_SV_ClientCommand);
         hook_jmp(0x0808c404, (int)custom_SVC_RemoteCommand);
         hook_jmp(0x0808bd58, (int)custom_SVC_Status);
+        hook_jmp(0x08084524, (int)custom_SV_BanNum_f);
         
         hook_Sys_LoadDll = new cHook(0x080c5fe4, (int)custom_Sys_LoadDll);
         hook_Sys_LoadDll->hook();
@@ -2784,8 +2244,6 @@ class iw1x
         hook_Com_Init->hook();
         hook_SV_BeginDownload_f = new cHook(0x08087a64, (int)custom_SV_BeginDownload_f);
         hook_SV_BeginDownload_f->hook();
-        hook_SV_AddOperatorCommands = new cHook(0x08084a3c, (int)custom_SV_AddOperatorCommands);
-        hook_SV_AddOperatorCommands->hook();
 
         printf("----------------------\n");
     }

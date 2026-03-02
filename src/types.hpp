@@ -22,6 +22,7 @@
 #define HMAX 256
 #define AUTHORIZE_TIMEOUT 5000
 #define AUTHORIZE_SERVER_NAME "codauthorize.activision.com"
+#define BAN_LIST_NAME "ban.txt"
 
 #define MAX_BPS_WINDOW              20
 #define MAX_CHALLENGES              1024
@@ -1034,7 +1035,6 @@ typedef struct src_error_s
 
 typedef struct customPlayerState_s
 {
-    bool noAutoPickup;
     bool hiddenFromScoreboard;
 } customPlayerState_t;
 

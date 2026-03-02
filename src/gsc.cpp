@@ -1,4 +1,4 @@
-#include "gsc.h"
+#include "gsc.hpp"
 
 const char * getParamTypeAsString(int type)
 {
@@ -53,8 +53,6 @@ scr_function_t scriptFunctions[] =
 
     {"sendCommandToClient", gsc_utils_sendcommandtoclient, 0},
     {"logPrintConsole", gsc_utils_logprintconsole, 0},
-    {"getSubStr", gsc_utils_getsubstr, 0, },
-    {"getAscii", gsc_utils_getascii, 0},
     {"toUpper", gsc_utils_toupper, 0},
     {"toLower", gsc_utils_tolower, 0},
     {"strtok", gsc_utils_strtok, 0},
@@ -66,8 +64,6 @@ scr_function_t scriptFunctions[] =
     {"unban", gsc_utils_unban, 0},
     {"strip", gsc_utils_strip, 0},
     {"strstr", gsc_utils_strstr, 0},
-    {"monotone", gsc_utils_monotone, 0},
-    {"getType", gsc_utils_gettype, 0},
 
     // Weapons
     {"setWeaponCookable", gsc_weapons_setweaponcookable, 0},
@@ -100,9 +96,6 @@ xfunction_t Scr_GetCustomFunction(const char **fname, int *fdev)
 scr_method_t scriptMethods[] =
 {
     //// Entity
-    {"setBounds", gsc_entity_setbounds, 0},
-    {"setClipmask", gsc_entity_setclipmask, 0},
-    {"getClipmask", gsc_entity_getclipmask, 0},
     {"showToPlayer", gsc_entity_showtoplayer, 0},
     ////
 
@@ -125,7 +118,6 @@ scr_method_t scriptMethods[] =
     {"connectionlessPacketToClient", gsc_player_connectionlesspackettoclient, 0},
     {"dropClient", gsc_player_dropclient, 0},
     {"setHiddenFromScoreboard", gsc_player_sethiddenfromscoreboard, 0},
-    {"isHiddenFromScoreboard", gsc_player_ishiddenfromscoreboard, 0},
 
     {"getVelocity", gsc_player_getvelocity, 0},
     {"setVelocity", gsc_player_setvelocity, 0},
@@ -133,11 +125,7 @@ scr_method_t scriptMethods[] =
     {"getPlayerAngles", gsc_player_getangles, 0},
     {"getStance", gsc_player_getstance, 0},
     {"isOnLadder", gsc_player_isonladder, 0},
-    {"noClip", gsc_player_noclip, 0},
     {"ufo", gsc_player_ufo, 0},
-    {"disableItemAutoPickup", gsc_player_disableitemautopickup, 0},
-    {"enableItemAutoPickup", gsc_player_enableitemautopickup, 0},
-    {"playScriptAnimation", gsc_player_playscriptanimation, 0},
     {"isBot", gsc_player_isbot, 0},
     ////
 
