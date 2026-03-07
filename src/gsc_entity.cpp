@@ -1,6 +1,7 @@
 #include "gsc.hpp"
 
-void gsc_entity_showtoplayer(scr_entref_t ref) //TODO: try like cod2rev instead
+// See https://github.com/xtnded/codextended/blob/50c43096543b300f1e87dcf5c3c9edf59367e85d/src/scr_method_entity.c#L150
+void gsc_entity_showtoplayer(scr_entref_t ref)
 {
     int id = ref.entnum;
     gentity_t *clientEnt;
