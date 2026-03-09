@@ -33,7 +33,6 @@ cvar_t *sv_debugRate;
 cvar_t *sv_downloadForce;
 cvar_t *sv_fastDownload;
 cvar_t *sv_fastDownloadSpeed;
-cvar_t *sv_gametype_color;
 cvar_t *sv_heartbeatDelay;
 cvar_t *sv_logHeartbeats;
 cvar_t *sv_spectatorNoclip;
@@ -259,6 +258,8 @@ void custom_Com_Init(char *commandLine)
     Cvar_Get("iw1x", "1", CVAR_SERVERINFO | CVAR_ROM);
     Cvar_Get("iw1x_version", "raph", CVAR_SERVERINFO | CVAR_ROM);
     Cvar_Get("iw1x_date", __DATE__, CVAR_SERVERINFO | CVAR_ROM);
+    Cvar_Get("g_gametype_color", "7", CVAR_ARCHIVE);
+    Cvar_Get("mapname_color", "7", CVAR_ARCHIVE);
 
     // Register and create references
     fs_callbacks_additional = Cvar_Get("fs_callbacks_additional", "", CVAR_ARCHIVE);
@@ -274,7 +275,6 @@ void custom_Com_Init(char *commandLine)
     sv_downloadForce = Cvar_Get("sv_downloadForce", "0", CVAR_ARCHIVE);
     sv_fastDownload = Cvar_Get("sv_fastDownload", "0", CVAR_ARCHIVE);
     sv_fastDownloadSpeed = Cvar_Get("sv_fastDownloadSpeed", std::to_string(MAX_DOWNLOAD_WINDOW).c_str(), CVAR_ARCHIVE);
-    sv_gametype_color = Cvar_Get("g_gametype_color", "7", CVAR_ARCHIVE);
     sv_heartbeatDelay = Cvar_Get("sv_heartbeatDelay", "30", CVAR_ARCHIVE);
     sv_logHeartbeats = Cvar_Get("sv_logHeartbeats", "1", CVAR_ARCHIVE);
     sv_spectatorNoclip = Cvar_Get("sv_spectatorNoclip", "0", CVAR_ARCHIVE);
@@ -1048,20 +1048,29 @@ void hook_SVC_Info(netadr_t from)
 
     SVC_Info(from);
 }
-void hook_SVC_Info_Info_SetValueForKey_gametype(char *s, const char *key, const char *value)
+void hook_SVC_Info_Info_SetValueForKey_gametype_mapname(char *s, const char *key, const char *value)
 {
     const char* finalValue = value;
-    if (*sv_gametype_color->string)
+    const char *g_gametype_color = "g_gametype_color";
+    const char *mapname_color = "mapname_color";
+    const char *colorCvarName;
+    if(!strcmp(key, "gametype"))
+        colorCvarName = g_gametype_color;
+    else if(!strcmp(key, "mapname"))
+        colorCvarName = mapname_color;
+        
+    const char *colorCvarString = Cvar_VariableString(colorCvarName);
+    if (*colorCvarString)
     {
-        char code = sv_gametype_color->string[0];
-        if (code >= '0' && code <= '7')
+        char colorCvarDigit = colorCvarString[0];
+        if (colorCvarDigit >= '0' && colorCvarDigit <= '7')
         {
-            std::string newValue = std::string("^") + code + value;
+            std::string newValue = std::string("^") + colorCvarDigit + value;
             finalValue = newValue.c_str();
         }
         else
         {
-            Com_Printf("sv_gametype_color should be a digit between 0 and 7\n");
+            Com_Printf("%s should be a digit between 0 and 7\n", colorCvarName);
         }
     }
     Info_SetValueForKey(s, key, finalValue);
@@ -2242,7 +2251,8 @@ class iw1x
         hook_call(0x0808c7b8, (int)hook_SV_DirectConnect);
         hook_call(0x0808c7ea, (int)hook_SV_AuthorizeIpPacket);
         hook_call(0x0808c74e, (int)hook_SVC_Info);
-        hook_call(0x0808c2cd, (int)hook_SVC_Info_Info_SetValueForKey_gametype);
+        hook_call(0x0808c2cd, (int)hook_SVC_Info_Info_SetValueForKey_gametype_mapname);
+        hook_call(0x0808c25e, (int)hook_SVC_Info_Info_SetValueForKey_gametype_mapname);
 
         hook_jmp(0x080717a4, (int)custom_FS_ReferencedPakChecksums);
         hook_jmp(0x080716cc, (int)custom_FS_ReferencedPakNames);
