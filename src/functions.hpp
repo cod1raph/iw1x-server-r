@@ -330,6 +330,9 @@ extern Scr_GetInt_t Scr_GetInt;
 typedef const char* (*Scr_GetString_t)(unsigned int param);
 extern Scr_GetString_t Scr_GetString;
 
+typedef float (*Scr_GetFloat_t)(unsigned int index);
+extern Scr_GetFloat_t Scr_GetFloat;
+
 typedef int (*Scr_GetType_t)(unsigned int param);
 extern Scr_GetType_t Scr_GetType;
 

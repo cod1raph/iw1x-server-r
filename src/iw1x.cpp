@@ -56,6 +56,7 @@ Scr_GetNumParam_t Scr_GetNumParam;
 Scr_IsSystemActive_t Scr_IsSystemActive;
 Scr_GetInt_t Scr_GetInt;
 Scr_GetString_t Scr_GetString;
+Scr_GetFloat_t Scr_GetFloat;
 Scr_GetType_t Scr_GetType;
 Scr_GetEntity_t Scr_GetEntity;
 Scr_AddBool_t Scr_AddBool;
@@ -2120,6 +2121,7 @@ void *custom_Sys_LoadDll(const char *name, char *fqpath, int (**entryPoint)(int,
     Scr_IsSystemActive = (Scr_IsSystemActive_t)dlsym(libHandle, "Scr_IsSystemActive");
     Scr_GetInt = (Scr_GetInt_t)dlsym(libHandle, "Scr_GetInt");
     Scr_GetString = (Scr_GetString_t)dlsym(libHandle, "Scr_GetString");
+    Scr_GetFloat = (Scr_GetFloat_t)dlsym(libHandle, "Scr_GetFloat");
     Scr_GetType = (Scr_GetType_t)dlsym(libHandle, "Scr_GetType");
     Scr_GetEntity = (Scr_GetEntity_t)dlsym(libHandle, "Scr_GetEntity");
     Scr_AddBool = (Scr_AddBool_t)dlsym(libHandle, "Scr_AddBool");

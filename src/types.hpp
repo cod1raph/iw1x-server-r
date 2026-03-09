@@ -196,6 +196,13 @@ typedef enum
     NS_SERVER
 } netsrc_t;
 
+enum cs_index_t
+{
+    //...
+    CS_FOGVARS = 12,
+    //...
+};
+
 typedef struct
 {
     qboolean overflowed;

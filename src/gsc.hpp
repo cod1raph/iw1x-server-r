@@ -61,6 +61,7 @@ void gsc_player_ufo(scr_entref_t ref);
 void gsc_player_connectionlesspackettoclient(scr_entref_t ref);
 void gsc_player_isbot(scr_entref_t ref);
 void gsc_player_sethiddenfromscoreboard(scr_entref_t ref);
+void gsc_player_setexpfogforplayer(scr_entref_t ref);
 ////
 
 //// Weapons

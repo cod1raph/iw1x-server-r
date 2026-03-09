@@ -45,27 +45,27 @@ void gsc_player_getvelocity(scr_entref_t ref)
 
 void gsc_player_addvelocity(scr_entref_t ref)
 {
-	int id = ref.entnum;
-	vec3_t velocity;
+    int id = ref.entnum;
+    vec3_t velocity;
 
-	if (!stackGetParams("v", &velocity))
-	{
-		stackError("gsc_player_addvelocity() argument is undefined or has a wrong type");
-		Scr_AddUndefined();
-		return;
-	}
+    if (!stackGetParams("v", &velocity))
+    {
+        stackError("gsc_player_addvelocity() argument is undefined or has a wrong type");
+        Scr_AddUndefined();
+        return;
+    }
 
-	if (id >= MAX_CLIENTS)
-	{
-		stackError("gsc_player_addvelocity() entity %i is not a player", id);
-		Scr_AddUndefined();
-		return;
-	}
+    if (id >= MAX_CLIENTS)
+    {
+        stackError("gsc_player_addvelocity() entity %i is not a player", id);
+        Scr_AddUndefined();
+        return;
+    }
 
-	playerState_t *ps = SV_GameClientNum(id);
-	VectorAdd(ps->velocity, velocity, ps->velocity);
+    playerState_t *ps = SV_GameClientNum(id);
+    VectorAdd(ps->velocity, velocity, ps->velocity);
 
-	Scr_AddBool(qtrue);
+    Scr_AddBool(qtrue);
 }
 
 void gsc_player_getuserinfokey(scr_entref_t ref)
@@ -492,4 +492,53 @@ void gsc_player_sethiddenfromscoreboard(scr_entref_t ref)
     customPlayerState[id].hiddenFromScoreboard = hidden;
 
     Scr_AddBool(true);
+}
+
+void Scr_SetFogForPlayer(const char *cmd, float start, float density, float heightDensity, float r, float g, float b, float time, int clientNum)
+{
+    if(start < 0.0)
+        Scr_Error(va("%s: near distance must be >= 0", cmd));
+
+    if(start >= density)
+        Scr_Error(va("%s: near distance must be less than far distance", cmd));
+
+    if(r < 0.0 || r > 1.0 || g < 0.0 || g > 1.0 || b < 0.0 || b > 1.0)
+        Scr_Error(va("%s: red/green/blue color components must be in the range [0, 1]", cmd));
+
+    if(time < 0.0)
+        Scr_Error(va("%s: transition time must be >= 0 seconds", cmd));
+
+    client_t *client = &svs.clients[clientNum];
+    char configstring[MAX_STRINGLENGTH];
+
+    Com_sprintf(configstring, MAX_STRINGLENGTH, "d %i %s", CS_FOGVARS, va("%g %g %g %g %g %g %.0f", start, density, heightDensity, r, g, b, (float)(time * 1000.0)));
+    SV_SendServerCommand(client, SV_CMD_RELIABLE, configstring);
+}
+
+void gsc_player_setexpfogforplayer(scr_entref_t ref)
+{
+    int id = ref.entnum;
+
+    if (id >= MAX_CLIENTS)
+    {
+        stackError("gsc_player_setexpfogforplayer() entity %i is not a player", id);
+        Scr_AddUndefined();
+        return;
+    }
+
+    if(Scr_GetNumParam() != 5)
+        Scr_Error("USAGE: setExpFogForPlayer(density, red, green, blue, transition time);\nDensity must be greater than 0 and less than 1, and typically less than .001. For example, .0002 means the fog gets .02%% more dense for every 1 unit of distance (about 1%% thicker every 50 units of distance)\n");
+
+    float density = Scr_GetFloat(0);
+    float r = Scr_GetFloat(1);
+    float g = Scr_GetFloat(2);
+    float b = Scr_GetFloat(3);
+    float transitionTime = Scr_GetFloat(4);
+
+    if(density <= 0.0 || 1.0 <= density)
+        Scr_Error("setExpFogForPlayer: density must be greater than 0 and less than 1");
+    
+    Scr_SetFogForPlayer("setExpFogForPlayer", 0.0, 1.0, density, r, g, b, transitionTime, id);
+
+    Scr_AddBool(qtrue);
 }
