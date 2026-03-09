@@ -301,8 +301,10 @@ extern Scr_GetFunction_t Scr_GetFunction;
 typedef xmethod_t (*Scr_GetMethod_t)(const char** v_methodName, qboolean *v_developer);
 extern Scr_GetMethod_t Scr_GetMethod;
 
+//FIXME: Calling Scr_Error from game lib and lnxded makes crash.
 typedef void (*Scr_Error_t)(const char *string);
 extern Scr_Error_t Scr_Error;
+//static const Scr_Error_t Scr_Error = (Scr_Error_t)0x080aa158;
 
 typedef short (*Scr_ExecThread_t)(int callbackHook, unsigned int numArgs);
 extern Scr_ExecThread_t Scr_ExecThread;
