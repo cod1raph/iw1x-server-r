@@ -64,6 +64,7 @@ scr_function_t scriptFunctions[] =
     {"unban", gsc_utils_unban, 0},
     {"strip", gsc_utils_strip, 0},
     {"strstr", gsc_utils_strstr, 0},
+    {"starts_with", gsc_utils_starts_with, 0},
 
     // Weapons
     {"setWeaponCookable", gsc_weapons_setweaponcookable, 0},
@@ -119,12 +120,15 @@ scr_method_t scriptMethods[] =
     {"dropClient", gsc_player_dropclient, 0},
     {"setHiddenFromScoreboard", gsc_player_sethiddenfromscoreboard, 0},
     {"setExpFogForPlayer", gsc_player_setexpfogforplayer, 0},
+    {"setAnimation", gsc_player_setanimation, 0},
+    {"setWeaponAnimation", gsc_player_setweaponanimation, 0},
 
     {"getVelocity", gsc_player_getvelocity, 0},
     {"setVelocity", gsc_player_setvelocity, 0},
     {"addVelocity", gsc_player_addvelocity, 0},
     {"getPlayerAngles", gsc_player_getangles, 0},
     {"getStance", gsc_player_getstance, 0},
+    {"getViewOrigin", gsc_player_getvieworigin, 0},
     {"isOnLadder", gsc_player_isonladder, 0},
     {"ufo", gsc_player_ufo, 0},
     {"isBot", gsc_player_isbot, 0},
@@ -419,21 +423,26 @@ void gsc_testmethod(scr_entref_t ref)
         Scr_AddUndefined();
         return;
     }
+
+
+    /*int animNumber;
+    if (!stackGetParams("i", &animNumber))
+    {
+        stackError("gsc_x() argument is undefined or has a wrong type");
+        Scr_AddUndefined();
+        return;
+    }*/
+    
+    
     
     //client_t* client = &svs.clients[id];
     //playerState_t *ps = SV_GameClientNum(id);
     //gentity_t *gentity = &g_entities[id];
+    //gclient_t *gclient = gentity->client;
     //weaponinfo_t *weapon = BG_GetInfoForWeapon(ps->weapon);
-
-
     
 
-    /*printf("###### ps->weapon = %i\n", ps->weapon);
-    printf("###### weapon->maxAmmo = %i\n", weapon->maxAmmo);*/
-
-
-
     
-
+    
 
 }

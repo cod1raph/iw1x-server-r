@@ -42,15 +42,18 @@ cvar_t *sv_spectatorNoclip;
 // Objects
 gentity_t *g_entities;
 level_locals_t *level;
+animScriptData_t **globalScriptData;
 
 // Functions
 G_Say_t G_Say;
+G_AddLean_t G_AddLean;
 trap_SendServerCommand_t trap_SendServerCommand;
 trap_GetConfigstringConst_t trap_GetConfigstringConst;
 trap_GetConfigstring_t trap_GetConfigstring;
 BG_GetNumWeapons_t BG_GetNumWeapons;
 BG_GetInfoForWeapon_t BG_GetInfoForWeapon;
 BG_GetWeaponIndexForName_t BG_GetWeaponIndexForName;
+BG_PlayAnim_t BG_PlayAnim;
 Scr_GetFunctionHandle_t Scr_GetFunctionHandle;
 Scr_GetNumParam_t Scr_GetNumParam;
 Scr_IsSystemActive_t Scr_IsSystemActive;
@@ -146,6 +149,7 @@ cHook *hook_PM_FlyMove;
 cHook *hook_SV_BeginDownload_f;
 cHook *hook_SV_SendClientGameState;
 cHook *hook_Sys_LoadDll;
+cHook *hook_BG_PlayAnim;
 
 // See https://github.com/xtnded/codextended/blob/855df4fb01d20f19091d18d46980b5fdfa95a712/src/shared.c#L632
 #define MAX_VA_STRING 32000
@@ -737,47 +741,47 @@ const char* NET_AdrToStringNoPort(netadr_t a)
 }
 bool SV_IsBannedIp(netadr_t adr)
 {
-	bool banned;
-	char *file;
-	const char *token;
-	const char *text;
+    bool banned;
+    char *file;
+    const char *token;
+    const char *text;
 
-	if(FS_ReadFile(BAN_LIST_NAME, (void **)&file) < 0)
-		return false;
+    if(FS_ReadFile(BAN_LIST_NAME, (void **)&file) < 0)
+        return false;
 
-	text = file;
-	banned = false;
+    text = file;
+    banned = false;
 
-	while (1)
-	{
-		token = Com_Parse(&text);
-		if(!token[0])
-			break;
+    while (1)
+    {
+        token = Com_Parse(&text);
+        if(!token[0])
+            break;
 
-		if (!strcmp(token, NET_AdrToStringNoPort(adr)))
-		{
-			banned = true;
-			break;
-		}
+        if (!strcmp(token, NET_AdrToStringNoPort(adr)))
+        {
+            banned = true;
+            break;
+        }
 
-		Com_SkipRestOfLine(&text);
-	}
+        Com_SkipRestOfLine(&text);
+    }
 
-	FS_FreeFile(file);
-	return banned;
+    FS_FreeFile(file);
+    return banned;
 }
 // See https://github.com/voron00/CoD2rev_Server/blob/d67bc532fd493c0291c2fdef2fb9baa12c1c906b/src/server/sv_client_mp.cpp#L168
 void SV_BanClient(client_t *cl)
 {
     int file;
-	char cleanName[64];
+    char cleanName[64];
     char ip[16];
 
     if (cl->netchan.remoteAddress.type == NA_LOOPBACK)
-	{
-		SV_SendServerCommand(NULL, SV_CMD_CAN_IGNORE, "e \"EXE_CANNOTKICKHOSTPLAYER\"");
-		return;
-	}
+    {
+        SV_SendServerCommand(NULL, SV_CMD_CAN_IGNORE, "e \"EXE_CANNOTKICKHOSTPLAYER\"");
+        return;
+    }
     
     snprintf(ip, sizeof(ip), "%d.%d.%d.%d",
         cl->netchan.remoteAddress.ip[0],
@@ -787,38 +791,38 @@ void SV_BanClient(client_t *cl)
     );
 
     if (SV_IsBannedIp(cl->netchan.remoteAddress))
-	{
+    {
         Com_Printf("This IP (%s) is already banned\n", ip);
-		return;
-	}
+        return;
+    }
 
     if(FS_FOpenFileByMode(BAN_LIST_NAME, &file, FS_APPEND) < 0)
-		return;
+        return;
 
     Q_strncpyz(cleanName, cl->name, sizeof(cleanName));
-	Q_CleanStr(cleanName);
+    Q_CleanStr(cleanName);
 
-	FS_Printf(file, "%s %s\r\n", ip, cleanName);
-	FS_FCloseFile(file);
+    FS_Printf(file, "%s %s\r\n", ip, cleanName);
+    FS_FCloseFile(file);
 
-	SV_DropClient(cl, "EXE_PLAYERKICKED");
-	cl->lastPacketTime = svs.time;
+    SV_DropClient(cl, "EXE_PLAYERKICKED");
+    cl->lastPacketTime = svs.time;
 }
 static void custom_SV_BanNum_f(void)
 {
     client_t *cl;
     
     if (!com_sv_running->integer)
-	{
-		Com_Printf("Server is not running.\n");
-		return;
-	}
+    {
+        Com_Printf("Server is not running.\n");
+        return;
+    }
     
     if (Cmd_Argc() != 2)
-	{
+    {
         Com_Printf("Usage: banClient <client number>\n");
-		return;
-	}
+        return;
+    }
     
     cl = SV_GetPlayerByNum();
     if(cl)
@@ -1008,9 +1012,9 @@ void hook_SV_AuthorizeIpPacket(netadr_t from)
     
     int challenge = atoi(Cmd_Argv(1));
     for (int i = 0; i < MAX_CHALLENGES; i++)
-	{
+    {
         if (svs.challenges[i].challenge == challenge)
-		{
+        {
             if (SV_IsBannedIp(svs.challenges[i].adr))
             {
                 Com_Printf("rejected connection from banned IP %s\n", NET_AdrToStringNoPort(svs.challenges[i].adr));
@@ -1021,8 +1025,8 @@ void hook_SV_AuthorizeIpPacket(netadr_t from)
             }
             
             break;
-		}
-	}
+        }
+    }
     
     SV_AuthorizeIpPacket(from);
 }
@@ -1944,9 +1948,10 @@ void custom_ClientEndFrame(gentity_t *ent)
     if (ent->client->sess.sessionState == STATE_PLAYING)
     {
         // Stop slide after fall damage
+        // See https://github.com/ibuddieat/zk_libcod/blob/1348315020dc6bd7485a3babc6ac4391af7569e4/code/libcod.cpp#L4882
         if(g_resetSlide->integer)
-            if(ent->client->ps.pm_flags & PMF_SLIDING)
-                ent->client->ps.pm_flags &= ~PMF_SLIDING;
+            if(ent->client->ps.pm_flags & PMF_TIME_SLIDE)
+                ent->client->ps.pm_flags &= ~PMF_TIME_SLIDE;
     }
 }
 
@@ -1970,6 +1975,79 @@ qboolean hook_StuckInClient(gentity_s *self)
     if(!g_playerEject->integer)
         return qfalse;
     return StuckInClient(self);
+}
+
+int custom_BG_PlayAnim(playerState_t *ps, int animNum, int bodyPart, int forceDuration, qboolean setTimer, qboolean isContinue, qboolean force)
+{
+    int duration;
+
+    hook_BG_PlayAnim->unhook();
+
+    // TODO: Figure out if should not override the animation if the game is about to play a death
+    // See https://github.com/ibuddieat/zk_libcod/blob/1348315020dc6bd7485a3babc6ac4391af7569e4/code/libcod.cpp#L4900
+    if (customPlayerState[ps->clientNum].animation)
+    {
+        duration = BG_PlayAnim(ps, customPlayerState[ps->clientNum].animation, bodyPart, forceDuration, qtrue, isContinue, qtrue);
+    }
+    else
+    {
+        duration = BG_PlayAnim(ps, animNum, bodyPart, forceDuration, setTimer, isContinue, force);
+    }
+
+    hook_BG_PlayAnim->hook();
+
+    return duration;
+}
+
+/*
+Stock BG_ExecuteCommand doesn't call BG_PlayAnim, althought it exists,
+so making BG_ExecuteCommand call BG_PlayAnim for setAnimation to work.
+TODO: Figure out if should make PM_CheckDuck call BG_PlayAnim too.
+*/
+int custom_BG_ExecuteCommand(playerState_t *ps, animScriptCommand_t *scriptCommand, qboolean setTimer, qboolean isContinue, qboolean force)
+{
+    int duration = -1;
+    qboolean playedLegsAnim = qfalse;
+    
+    if (scriptCommand->bodyPart[0])
+    {
+        duration = scriptCommand->animDuration[0] + 50;
+        // FIXME: See https://github.com/id-Software/RTCW-MP/blob/937b209a3c14857bea09a692545c59ac1a241275/src/game/bg_animation.c#L1570
+        if (scriptCommand->bodyPart[0] == ANIM_BP_BOTH || scriptCommand->bodyPart[0] == ANIM_BP_LEGS)
+        {
+            playedLegsAnim = (BG_PlayAnim(ps, scriptCommand->animIndex[0], scriptCommand->bodyPart[0], duration, setTimer, isContinue, force) > -1);
+        }
+        else
+        {
+            BG_PlayAnim(ps, scriptCommand->animIndex[0], scriptCommand->bodyPart[0], duration, setTimer, isContinue, force);
+        }
+    }
+
+    if (scriptCommand->bodyPart[1])
+    {
+        duration = scriptCommand->animDuration[0] + 50;
+        // FIXME: See https://github.com/id-Software/RTCW-MP/blob/937b209a3c14857bea09a692545c59ac1a241275/src/game/bg_animation.c#L1579
+        if (scriptCommand->bodyPart[0] == ANIM_BP_BOTH || scriptCommand->bodyPart[0] == ANIM_BP_LEGS)
+        {
+            playedLegsAnim = (BG_PlayAnim(ps, scriptCommand->animIndex[1], scriptCommand->bodyPart[1], duration, setTimer, isContinue, force) > -1);
+        }
+        else
+        {
+            BG_PlayAnim(ps, scriptCommand->animIndex[1], scriptCommand->bodyPart[1], duration, setTimer, isContinue, force);
+        }
+    }
+
+    if (scriptCommand->soundAlias)
+    {
+        (*globalScriptData)->playSoundAlias(ps->clientNum, scriptCommand->soundAlias);
+    }
+
+    if (!playedLegsAnim)
+    {
+        return -1;
+    }
+
+    return duration;
 }
 
 void custom_DeathmatchScoreboardMessage(gentity_t *ent)
@@ -2123,6 +2201,7 @@ void *custom_Sys_LoadDll(const char *name, char *fqpath, int (**entryPoint)(int,
     // Objects
     g_entities = (gentity_t*)dlsym(libHandle, "g_entities");
     level = (level_locals_t*)dlsym(libHandle, "level");
+    globalScriptData = (animScriptData_t**)((int)dlsym(libHandle, "weaponStringsInited") - 0xC);
 
     //// Functions
     Scr_GetFunctionHandle = (Scr_GetFunctionHandle_t)dlsym(libHandle, "Scr_GetFunctionHandle");
@@ -2142,11 +2221,13 @@ void *custom_Sys_LoadDll(const char *name, char *fqpath, int (**entryPoint)(int,
     Scr_GetConstString = (Scr_GetConstString_t)dlsym(libHandle, "Scr_GetConstString");
     Scr_ParamError = (Scr_ParamError_t)dlsym(libHandle, "Scr_ParamError");
     G_Say = (G_Say_t)dlsym(libHandle, "G_Say");
+    G_AddLean = (G_AddLean_t)dlsym(libHandle, "G_AddLean");
     trap_GetConfigstringConst = (trap_GetConfigstringConst_t)dlsym(libHandle, "trap_GetConfigstringConst");
     trap_GetConfigstring = (trap_GetConfigstring_t)dlsym(libHandle, "trap_GetConfigstring");
     BG_GetNumWeapons = (BG_GetNumWeapons_t)dlsym(libHandle, "BG_GetNumWeapons");
     BG_GetInfoForWeapon = (BG_GetInfoForWeapon_t)dlsym(libHandle, "BG_GetInfoForWeapon");
     BG_GetWeaponIndexForName = (BG_GetWeaponIndexForName_t)dlsym(libHandle, "BG_GetWeaponIndexForName");
+    BG_PlayAnim = (BG_PlayAnim_t)dlsym(libHandle, "BG_PlayAnim");
     Scr_IsSystemActive = (Scr_IsSystemActive_t)dlsym(libHandle, "Scr_IsSystemActive");
     Scr_GetInt = (Scr_GetInt_t)dlsym(libHandle, "Scr_GetInt");
     Scr_GetString = (Scr_GetString_t)dlsym(libHandle, "Scr_GetString");
@@ -2198,6 +2279,7 @@ void *custom_Sys_LoadDll(const char *name, char *fqpath, int (**entryPoint)(int,
 
     hook_jmp((int)dlsym(libHandle, "G_LocalizedStringIndex"), (int)custom_G_LocalizedStringIndex);
     hook_jmp((int)dlsym(libHandle, "va"), (int)custom_va);
+    hook_jmp((int)dlsym(libHandle, "BG_ExecuteCommand"), (int)custom_BG_ExecuteCommand);
     
     hook_GScr_LoadGameTypeScript = new cHook((int)dlsym(libHandle, "GScr_LoadGameTypeScript"), (int)custom_GScr_LoadGameTypeScript);
     hook_GScr_LoadGameTypeScript->hook();
@@ -2207,6 +2289,8 @@ void *custom_Sys_LoadDll(const char *name, char *fqpath, int (**entryPoint)(int,
     hook_DeathmatchScoreboardMessage->hook();
     hook_PM_FlyMove = new cHook((int)dlsym(libHandle, "_init") + 0x79C8, (int)custom_PM_FlyMove);
     hook_PM_FlyMove->hook();
+    hook_BG_PlayAnim = new cHook((int)dlsym(libHandle, "BG_PlayAnim"), (int)custom_BG_PlayAnim);
+    hook_BG_PlayAnim->hook();
     
     return libHandle;
 }

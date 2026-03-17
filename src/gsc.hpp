@@ -49,6 +49,7 @@ void gsc_player_button_leanright(scr_entref_t ref);
 void gsc_player_button_reload(scr_entref_t ref);
 void gsc_player_getangles(scr_entref_t ref);
 void gsc_player_getstance(scr_entref_t ref);
+void gsc_player_getvieworigin(scr_entref_t ref);
 void gsc_player_getuserinfokey(scr_entref_t ref);
 void gsc_player_setuserinfokey(scr_entref_t ref);
 void gsc_player_getip(scr_entref_t ref);
@@ -62,6 +63,8 @@ void gsc_player_connectionlesspackettoclient(scr_entref_t ref);
 void gsc_player_isbot(scr_entref_t ref);
 void gsc_player_sethiddenfromscoreboard(scr_entref_t ref);
 void gsc_player_setexpfogforplayer(scr_entref_t ref);
+void gsc_player_setanimation(scr_entref_t ref);
+void gsc_player_setweaponanimation(scr_entref_t ref);
 ////
 
 //// Weapons
@@ -89,6 +92,7 @@ void gsc_utils_ban();
 void gsc_utils_unban();
 void gsc_utils_strip();
 void gsc_utils_strstr();
+void gsc_utils_starts_with();
 ////
 
 #endif

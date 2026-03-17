@@ -43,6 +43,9 @@ extern BG_GetInfoForWeapon_t BG_GetInfoForWeapon;
 
 typedef int (*BG_GetWeaponIndexForName_t)(const char *name);
 extern BG_GetWeaponIndexForName_t BG_GetWeaponIndexForName;
+
+typedef int (*BG_PlayAnim_t)(playerState_t *ps, int animNum, int bodyPart, int forceDuration, qboolean setTimer, qboolean isContinue, qboolean force);
+extern BG_PlayAnim_t BG_PlayAnim;
 ////
 
 //// Cmd
@@ -161,6 +164,9 @@ extern G_Say_t G_Say;
 
 typedef int (*G_LocalizedStringIndex_t)(const char *string);
 extern G_LocalizedStringIndex_t G_LocalizedStringIndex;
+
+typedef void (*G_AddLean_t)(gentity_t *ent, vec3_t origin);
+extern G_AddLean_t G_AddLean;
 ////
 
 //// Get
@@ -301,7 +307,7 @@ extern Scr_GetFunction_t Scr_GetFunction;
 typedef xmethod_t (*Scr_GetMethod_t)(const char** v_methodName, qboolean *v_developer);
 extern Scr_GetMethod_t Scr_GetMethod;
 
-//FIXME: Calling Scr_Error from game lib and lnxded makes crash.
+// FIXME: Calling Scr_Error from game lib and lnxded makes crash.
 typedef void (*Scr_Error_t)(const char *string);
 extern Scr_Error_t Scr_Error;
 //static const Scr_Error_t Scr_Error = (Scr_Error_t)0x080aa158;

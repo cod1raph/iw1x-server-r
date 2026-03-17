@@ -22,7 +22,9 @@
 #define HMAX 256
 #define AUTHORIZE_TIMEOUT 5000
 #define AUTHORIZE_SERVER_NAME "codauthorize.activision.com"
-#define BAN_LIST_NAME "ban.txt"
+#define SVF_SINGLECLIENT 0x800
+#define ANIM_BITS 10
+#define ANIM_TOGGLEBIT (1 << ( ANIM_BITS - 1))
 
 #define MAX_BPS_WINDOW              20
 #define MAX_CHALLENGES              1024
@@ -48,6 +50,7 @@
 #define MAX_HUDELEMS_ARCHIVAL       MAX_HUDELEMENTS
 #define MAX_HUDELEMS_CURRENT        MAX_HUDELEMENTS
 #define MAX_CVAR_VALUE_STRING       256
+#define MAX_MODEL_ANIMATIONS        512
 
 #define CVAR_ARCHIVE        1
 #define CVAR_SERVERINFO     4
@@ -56,8 +59,6 @@
 #define CVAR_LATCH          32
 #define CVAR_ROM            64
 #define CVAR_CHEAT          512
-
-#define SVF_SINGLECLIENT 0x800
 
 #define KEY_MASK_NONE           0
 #define KEY_MASK_FORWARD        127
@@ -81,21 +82,7 @@
 #define PMF_PRONE       0x1
 #define PMF_CROUCH      0x2
 #define PMF_LADDER      0x10
-#define PMF_SLIDING     0x100
-
-typedef void (*xcommand_t)(void);
-
-typedef unsigned char byte;
-typedef struct gclient_s gclient_t;
-typedef struct gentity_s gentity_t;
-
-struct vm_t;
-
-typedef struct scr_entref_s
-{
-    uint16_t entnum;
-    uint16_t classnum;
-} scr_entref_t;
+#define PMF_TIME_SLIDE  0x100
 
 typedef enum
 {
@@ -182,13 +169,14 @@ typedef enum
     NA_BROADCAST_IPX = 6
 } netadrtype_t;
 
-typedef struct
+typedef enum
 {
-    netadrtype_t type;
-    byte ip[4];
-    byte ipx[10];
-    unsigned short port;
-} netadr_t;
+    ANIM_BP_UNUSED,
+    ANIM_BP_LEGS,
+    ANIM_BP_TORSO,
+    ANIM_BP_BOTH,
+    NUM_ANIM_BODYPARTS
+} animBodyPart_t;
 
 typedef enum
 {
@@ -202,6 +190,172 @@ enum cs_index_t
     CS_FOGVARS = 12,
     //...
 };
+
+enum fsMode_t
+{
+    FS_READ,
+    FS_WRITE,
+    FS_APPEND,
+    FS_APPEND_SYNC
+};
+
+typedef enum
+{
+    EV_STANCE_FORCE_STAND = 0x8c,
+    // ...
+} entity_event_t;
+
+typedef enum
+{
+    G_PRINT,
+    G_ERROR,
+    //...
+} gameImport_t;
+
+typedef enum
+{
+    GAME_CLIENT_COMMAND = 6,
+    GAME_CLIENT_SCORE_GET = 0x14
+} gameExport_t;
+
+typedef enum
+{
+    TR_STATIONARY = 0,
+    TR_INTERPOLATE = 1,
+    TR_LINEAR = 2,
+    TR_LINEAR_STOP = 3,
+    TR_SINE = 4,
+    TR_GRAVITY = 5,
+    TR_GRAVITY_PAUSED = 6,
+    TR_ACCELERATE = 7,
+    TR_DECCELERATE = 8
+} trType_t;
+
+typedef enum
+{
+    PM_NORMAL = 0x0,
+    PM_NORMAL_LINKED = 0x1,
+    PM_NOCLIP = 0x2,
+    PM_UFO = 0x3,
+    PM_SPECTATOR = 0x4,
+    PM_INTERMISSION = 0x5,
+    PM_DEAD = 0x6,
+    PM_DEAD_LINKED = 0x7,
+} pmtype_t;
+
+typedef enum
+{
+    WEAPON_READY = 0x0,
+    WEAPON_RAISING = 0x1,
+    WEAPON_DROPPING = 0x2,
+    WEAPON_FIRING = 0x3,
+    WEAPON_RECHAMBERING = 0x4,
+    WEAPON_RELOADING = 0x5,
+    WEAPON_RELOADING_INTERUPT = 0x6,
+    WEAPON_RELOAD_START = 0x7,
+    WEAPON_RELOAD_START_INTERUPT = 0x8,
+    WEAPON_RELOAD_END = 0x9,
+    WEAPON_MELEE_INIT = 0xA,
+    WEAPON_MELEE_FIRE = 0xB,
+    WEAPONSTATES_NUM = 0xC,
+} weaponstate_t;
+
+typedef enum
+{
+    SS_DEAD,
+    SS_LOADING,
+    SS_GAME
+} serverState_t;
+
+enum clc_ops_e
+{
+    clc_move,
+    clc_moveNoDelta,
+    clc_clientCommand,
+    clc_EOF
+};
+
+enum svscmd_type
+{
+    SV_CMD_CAN_IGNORE = 0x0,
+    SV_CMD_RELIABLE = 0x1,
+};
+
+typedef enum
+{
+    EXEC_NOW,
+    EXEC_INSERT,
+    EXEC_APPEND
+} cbufExec_t;
+
+typedef enum
+{
+    ANIM_ET_PAIN,
+    ANIM_ET_DEATH,
+    ANIM_ET_FIREWEAPON,
+    UNKNOWN,                    // Does nothing
+    UNKNOWN_2,                  // Does nothing
+    ANIM_ET_LAND,       
+    ANIM_ET_DROPWEAPON,         // Change weapon
+    UNKNOWN_3,                  // Does nothing
+    UNKNOWN_4,                  // Does nothing
+    UNKNOWN_5,                  // Does nothing
+    ANIM_ET_RELOAD, // 10
+    UNKNOWN_6,                  // Does nothing
+    UNKNOWN_7,                  // Does nothing
+    ANIM_ET_MELEEATTACK,
+    ANIM_ET_CROUCH_TO_STAND,    // CRASH
+    UNKNOWN_8,
+    UNKNOWN_9,
+    UNKNOWN_10,
+    ANIM_ET_SHELLSHOCK,         // CRASH
+
+    NUM_ANIM_EVENTTYPES
+} scriptAnimEventTypes_t;
+
+enum weapAnimNumber_t
+{
+	WEAP_IDLE = 0x0,
+	WEAP_FORCE_IDLE = 0x1,
+	WEAP_ATTACK = 0x2,
+	WEAP_ATTACK_LASTSHOT = 0x3,
+	WEAP_RECHAMBER = 0x4,
+	WEAP_ADS_ATTACK = 0x5,
+	WEAP_ADS_ATTACK_LASTSHOT = 0x6,
+	WEAP_ADS_RECHAMBER = 0x7,
+	WEAP_MELEE_ATTACK = 0x8,
+	WEAP_DROP = 0x9,
+	WEAP_RAISE = 0xA,
+	WEAP_RELOAD = 0xB,
+	WEAP_RELOAD_EMPTY = 0xC,
+	WEAP_RELOAD_START = 0xD,
+	WEAP_RELOAD_END = 0xE,
+	WEAP_ALTSWITCHFROM = 0xF,
+	WEAP_ALTSWITCHTO = 0x10,
+	MAX_WP_ANIMATIONS = 0x11,
+}; // TODO: verify
+
+typedef void (*xcommand_t)(void);
+
+typedef unsigned char byte;
+typedef struct gclient_s gclient_t;
+typedef struct gentity_s gentity_t;
+
+struct vm_t;
+
+typedef struct scr_entref_s
+{
+    uint16_t entnum;
+    uint16_t classnum;
+} scr_entref_t;
+
+typedef struct
+{
+    netadrtype_t type;
+    byte ip[4];
+    byte ipx[10];
+    unsigned short port;
+} netadr_t;
 
 typedef struct
 {
@@ -303,14 +457,6 @@ struct directory_t
     char gamedir[MAX_OSPATH];
 };
 
-enum fsMode_t
-{
-    FS_READ,
-    FS_WRITE,
-    FS_APPEND,
-    FS_APPEND_SYNC
-};
-
 struct pack_t
 {
     char pakFilename[MAX_OSPATH];
@@ -332,12 +478,6 @@ struct searchpath_t
     directory_t *dir;
     //...
 };
-
-typedef enum
-{
-    EV_STANCE_FORCE_STAND = 0x8c,
-    // ...
-} entity_event_t;
 
 typedef struct nodetype
 {
@@ -402,21 +542,7 @@ typedef struct usercmd_s
     byte unknown;
 } usercmd_t;
 
-typedef enum
-{
-    G_PRINT,
-    G_ERROR,
-    //...
-} gameImport_t;
-
-typedef enum
-{
-    GAME_CLIENT_COMMAND = 6,
-    GAME_CLIENT_SCORE_GET = 0x14
-} gameExport_t;
-
 typedef void netProfileInfo_t;
-
 typedef struct
 {
     netsrc_t sock;
@@ -441,19 +567,6 @@ typedef struct
     int cmdTime;
     int cmdType;
 } reliableCommands_t;
-
-typedef enum
-{
-    TR_STATIONARY = 0,
-    TR_INTERPOLATE = 1,
-    TR_LINEAR = 2,
-    TR_LINEAR_STOP = 3,
-    TR_SINE = 4,
-    TR_GRAVITY = 5,
-    TR_GRAVITY_PAUSED = 6,
-    TR_ACCELERATE = 7,
-    TR_DECCELERATE = 8
-} trType_t;
 
 typedef struct
 {
@@ -481,7 +594,7 @@ typedef struct entityState_s
     int constantLight;
     int loopSound;
     int surfType;
-    int index; // modelIndex
+    int index;
     int clientNum;
     int iHeadIcon;
     int iHeadIconTeam;
@@ -494,7 +607,7 @@ typedef struct entityState_s
     int legsAnim;
     int torsoAnim;
     int leanf;
-    int scale; // used as loopfxid, hintstring, ... and doesn't actually scale a player's model size
+    int scale;
     int dmgFlags;
     int animMovetype;
     float fTorsoHeight;
@@ -538,35 +651,6 @@ typedef struct hudElemState_s
     hudelem_t current[31];
     hudelem_t archival[31];
 } hudElemState_t;
-
-typedef enum
-{
-    PM_NORMAL = 0x0,
-    PM_NORMAL_LINKED = 0x1,
-    PM_NOCLIP = 0x2,
-    PM_UFO = 0x3,
-    PM_SPECTATOR = 0x4,
-    PM_INTERMISSION = 0x5,
-    PM_DEAD = 0x6,
-    PM_DEAD_LINKED = 0x7,
-} pmtype_t;
-
-typedef enum
-{
-    WEAPON_READY = 0x0,
-    WEAPON_RAISING = 0x1,
-    WEAPON_DROPPING = 0x2,
-    WEAPON_FIRING = 0x3,
-    WEAPON_RECHAMBERING = 0x4,
-    WEAPON_RELOADING = 0x5,
-    WEAPON_RELOADING_INTERUPT = 0x6,
-    WEAPON_RELOAD_START = 0x7,
-    WEAPON_RELOAD_START_INTERUPT = 0x8,
-    WEAPON_RELOAD_END = 0x9,
-    WEAPON_MELEE_INIT = 0xA,
-    WEAPON_MELEE_FIRE = 0xB,
-    WEAPONSTATES_NUM = 0xC,
-} weaponstate_t;
 
 typedef struct playerState_s
 {
@@ -822,13 +906,6 @@ typedef struct
     //...
 } level_locals_t;
 
-typedef enum
-{
-    SS_DEAD,
-    SS_LOADING,
-    SS_GAME
-} serverState_t;
-
 typedef struct
 {
     serverState_t state;
@@ -857,27 +934,6 @@ typedef struct
     int	ucompNum;
 } server_t; // TODO: Verify, seems too big
 
-enum clc_ops_e
-{
-    clc_move,
-    clc_moveNoDelta,
-    clc_clientCommand,
-    clc_EOF
-};
-
-enum svscmd_type
-{
-    SV_CMD_CAN_IGNORE = 0x0,
-    SV_CMD_RELIABLE = 0x1,
-};
-
-typedef enum
-{
-    EXEC_NOW,
-    EXEC_INSERT,
-    EXEC_APPEND
-} cbufExec_t;
-
 typedef struct weaponinfo_t
 {
     int number;             // 0x0
@@ -904,31 +960,6 @@ typedef struct weaponinfo_t
     int clipOnly;           // 0x2D4
     //...
 } weaponinfo_t;
-
-typedef enum
-{
-    ANIM_ET_PAIN,
-    ANIM_ET_DEATH,
-    ANIM_ET_FIREWEAPON,
-    UNKNOWN,                    // Does nothing
-    UNKNOWN_2,                  // Does nothing
-    ANIM_ET_LAND,       
-    ANIM_ET_DROPWEAPON,         // Change weapon
-    UNKNOWN_3,                  // Does nothing
-    UNKNOWN_4,                  // Does nothing
-    UNKNOWN_5,                  // Does nothing
-    ANIM_ET_RELOAD, // 10
-    UNKNOWN_6,                  // Does nothing
-    UNKNOWN_7,                  // Does nothing
-    ANIM_ET_MELEEATTACK,
-    ANIM_ET_CROUCH_TO_STAND,    // CRASH
-    UNKNOWN_8,
-    UNKNOWN_9,
-    UNKNOWN_10,
-    ANIM_ET_SHELLSHOCK,         // CRASH
-
-    NUM_ANIM_EVENTTYPES         // CRASH
-} scriptAnimEventTypes_t;
 
 struct pmove_t
 {
@@ -976,7 +1007,39 @@ typedef struct
     //...
 } stringIndex_t;
 
+typedef struct snd_alias_list_s
+{
+    //...
+} snd_alias_list_t;
+
+typedef struct
+{
+    short bodyPart[2];
+    short animIndex[2];
+    short animDuration[2];
+    snd_alias_list_t *soundAlias;
+} animScriptCommand_t;
+
+typedef struct animation_s
+{
+    char name[64];
+    int initialLerp;
+    float moveSpeed;
+    int duration;
+    int nameHash;
+    byte gap_0x50[0xC];
+} animation_t;
+
+typedef struct animScriptData_s
+{
+    animation_s animations[MAX_MODEL_ANIMATIONS];
+    int numAnimations; // 0xb800
+    byte gap_0xB804[0x8FED4];
+    void (*playSoundAlias)(int, snd_alias_list_t *);
+} animScriptData_t;
+
 extern gentity_t *g_entities;
+extern animScriptData_t **globalScriptData;
 
 #define com_frameTime (*((int*)(0x0833df1c)))
 #define fs_searchpaths (*((searchpath_t**)(0x080dd590)))
@@ -1010,10 +1073,14 @@ static_assert((sizeof(serverStatic_t) == 45188), "ERROR: serverStatic_t size is 
 static_assert((sizeof(netadr_t) == 20), "ERROR: netadr_t size is invalid");
 //static_assert((sizeof(server_t) == 398572), "ERROR: server_t size is invalid");
 static_assert((sizeof(challenge_t) == 44), "ERROR: challenge_t size is invalid");
+static_assert((sizeof(animation_t) == 92), "ERROR: animation_t size is invalid!");
 #endif
 
 
 //// Custom
+
+#define BAN_LIST_NAME "ban.txt"
+#define MAX_ERROR_BUFFER 64
 
 typedef struct leakyBucket_s leakyBucket_t;
 struct leakyBucket_s
@@ -1033,7 +1100,6 @@ typedef struct callback_s
     bool custom;
 } callback_t;
 
-#define MAX_ERROR_BUFFER 64
 typedef struct src_error_s
 {
     char internal_function[64];
@@ -1043,6 +1109,7 @@ typedef struct src_error_s
 typedef struct customPlayerState_s
 {
     bool hiddenFromScoreboard;
+    int animation;
 } customPlayerState_t;
 
 typedef struct customChallenge_s

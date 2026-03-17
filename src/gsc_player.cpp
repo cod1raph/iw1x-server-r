@@ -514,7 +514,6 @@ void Scr_SetFogForPlayer(const char *cmd, float start, float density, float heig
     Com_sprintf(configstring, MAX_STRINGLENGTH, "d %i %s", CS_FOGVARS, va("%g %g %g %g %g %g %.0f", start, density, heightDensity, r, g, b, (float)(time * 1000.0)));
     SV_SendServerCommand(client, SV_CMD_RELIABLE, configstring);
 }
-
 void gsc_player_setexpfogforplayer(scr_entref_t ref)
 {
     int id = ref.entnum;
@@ -541,4 +540,126 @@ void gsc_player_setexpfogforplayer(scr_entref_t ref)
     Scr_SetFogForPlayer("setExpFogForPlayer", 0.0, 1.0, density, r, g, b, transitionTime, id);
 
     Scr_AddBool(qtrue);
+}
+
+long BG_StringHashValue(const char *fname)
+{
+    int i;
+    long hash;
+
+    hash = 0;
+    i = 0;
+    while (fname[i] != '\0')
+    {
+        hash += (long)(tolower(fname[i])) * (i + 119);
+        i++;
+    }
+    if(hash == -1)
+        hash = 0;
+
+    return hash;
+}
+int GetAnimationId(const char *string)
+{
+    int i;
+    int hash;
+    animation_t *anim;
+
+    hash = BG_StringHashValue(string);
+    for (i = 0; i < (*globalScriptData)->numAnimations; i++)
+    {
+        anim = &(*globalScriptData)->animations[i];
+        if((hash == anim->nameHash ) && !Q_stricmp(string, anim->name))
+            return i;
+    }
+
+    return -1;
+}
+void gsc_player_setanimation(scr_entref_t ref)
+{
+    int id = ref.entnum;
+    char *animation;
+    int animationId;
+
+    if (!stackGetParams("s", &animation))
+    {
+        stackError("gsc_player_setanimation() argument is undefined or has a wrong type");
+        Scr_AddUndefined();
+        return;
+    }
+
+    if(!strncmp(animation, "none", 4))
+        animationId = 0;
+    else
+        animationId = GetAnimationId(animation);
+
+    if (animationId == -1)
+    {
+        stackError("gsc_player_setanimation() invalid animation string");
+        Scr_AddUndefined();
+        return;
+    }
+
+    gentity_t *entity = &g_entities[id];
+    if (entity->s.eType == ET_PLAYER_CORPSE)
+    {
+        entity->s.legsAnim = animationId;
+        Scr_AddBool(qtrue);
+        return;
+    }
+
+    if (entity->client == NULL)
+    {
+        stackError("gsc_player_setanimation() entity %i is not a player", id);
+        Scr_AddUndefined();
+        return;
+    }
+
+    customPlayerState[id].animation = animationId;
+
+    Scr_AddBool(qtrue);
+}
+
+void gsc_player_setweaponanimation(scr_entref_t ref)
+{
+    int id = ref.entnum;
+    int animNumber;
+    
+    if (!stackGetParams("i", &animNumber))
+    {
+        stackError("gsc_player_setweaponanimation() argument is undefined or has a wrong type");
+        Scr_AddUndefined();
+        return;
+    }
+
+    playerState_t *ps = SV_GameClientNum(id);
+
+    if(ps->pm_type >= PM_DEAD)
+        return;
+    
+    ps->weapAnim = (animNumber | (( ps->weapAnim & ANIM_TOGGLEBIT ) ^ ANIM_TOGGLEBIT));
+    
+    Scr_AddBool(qtrue);
+}
+
+void gsc_player_getvieworigin(scr_entref_t ref)
+{
+    int id = ref.entnum;
+
+    if (id >= MAX_CLIENTS)
+    {
+        stackError("gsc_player_getvieworigin() entity %i is not a player", id);
+        Scr_AddUndefined();
+        return;
+    }
+    
+    gentity_t *gentity = &g_entities[id];
+    gclient_t *gclient = gentity->client;
+    
+    vec3_t viewOrigin;
+    VectorCopy(gclient->ps.origin, viewOrigin);
+    viewOrigin[2] = viewOrigin[2] + gclient->ps.viewHeightCurrent;
+    G_AddLean(gentity, viewOrigin);
+
+    Scr_AddVector(viewOrigin);
 }

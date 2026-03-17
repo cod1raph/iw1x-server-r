@@ -148,7 +148,8 @@ skip:
     }
 }
 
-void gsc_utils_replace() //TODO: check if needs improvements
+// This function is here only for MiscMod users
+void gsc_utils_replace()
 {
     char* orig;
     char* rep;
@@ -446,12 +447,33 @@ void gsc_utils_strstr()
     
     if(!stackGetParams("ss", &str, &sub)) 
     {
-        stackError("gsc_utils_pmatch() arguments are undefined or have a wrong type");
+        stackError("gsc_utils_strstr() arguments are undefined or have a wrong type");
         Scr_AddUndefined();
         return;
     }
 
     if (strstr(str, sub) != NULL) 
+    {
+        Scr_AddBool(qtrue);
+    } 
+    else 
+    {
+        Scr_AddBool(qfalse);
+    }
+}
+
+void gsc_utils_starts_with()
+{
+    const char *str, *sub;
+    
+    if(!stackGetParams("ss", &str, &sub)) 
+    {
+        stackError("gsc_utils_starts_with() arguments are undefined or have a wrong type");
+        Scr_AddUndefined();
+        return;
+    }
+
+    if (std::string(str).starts_with(sub)) 
     {
         Scr_AddBool(qtrue);
     } 
