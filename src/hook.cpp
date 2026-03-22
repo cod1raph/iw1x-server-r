@@ -13,9 +13,9 @@ void hook_call(int from, int to)
     memcpy((void *)(from+1), &relative, 4); // set relative address with endian
 }
 
+// See https://github.com/xtnded/codextended/blob/855df4fb01d20f19091d18d46980b5fdfa95a712/src/util.h#L111
 void hook_nop(int from, int to)
 {
-    // See https://github.com/xtnded/codextended/blob/855df4fb01d20f19091d18d46980b5fdfa95a712/src/util.h#L111
     int len;
     if(to < from)
         len = to;

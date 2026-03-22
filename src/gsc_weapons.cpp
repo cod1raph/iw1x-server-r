@@ -3,10 +3,8 @@
 qboolean isValidWeaponId(int id)
 {
     int weps = BG_GetNumWeapons();
-
-    if (id > weps || id <= 0 || weps == 0)
+    if(id > weps || id <= 0 || weps == 0)
         return qfalse;
-
     return qtrue;
 }
 

@@ -371,114 +371,39 @@ void gsc_utils_makelocalizedstring()
     var->type = STACK_LOCALIZED_STRING;
 }
 
-void gsc_utils_ban()
+void gsc_utils_issubstr()
 {
-    int numParam = Scr_GetNumParam();
-    if (numParam)
-    {
-        std::string command = "ban";
-        command.append(" ");
-        for (int i = 0; i < numParam; i++)
-        {
-            std::string param = Scr_GetString(i);
-            command.append(param);
-        }
-        Cbuf_ExecuteText(EXEC_APPEND, va(command.c_str()));
-    }
+    Scr_AddBool(strstr(Scr_GetString(0), Scr_GetString(1)) != NULL);
 }
 
-void gsc_utils_unban()
+// See https://github.com/voron00/CoD2rev_Server/blob/79850694857ddd6af909b375a8310a8c1d7e752f/src/game/g_scr_main_mp.cpp#L3189
+void gsc_utils_getsubstr()
 {
-    int numParam = Scr_GetNumParam();
-    if (numParam)
-    {
-        std::string command = "unban";
-        command.append(" ");
-        for (int i = 0; i < numParam; i++)
-        {
-            std::string param = Scr_GetString(i);
-            command.append(param);
-        }
-        Cbuf_ExecuteText(EXEC_APPEND, va(command.c_str()));
-    }
-}
+    size_t i;
+    int c;
+    char tempString[MAX_STRINGLENGTH];
 
-void gsc_utils_strip()
-{
-    const char *input;
-    char result[256] = {0};
-    int start = 0, end = 0, i = 0;
+    const char *s = Scr_GetString(0);
 
-    if(!stackGetParams("s", &input)) 
+    int start = Scr_GetInt(1);
+    int end = INT_MAX;
+
+    if(Scr_GetNumParam() > 2)
+        end = Scr_GetInt(2);
+
+    for (i = 0; start < end; i++, start++)
     {
-        stackError("gsc_utils_strip() argument is undefined or has a wrong type");
-        Scr_AddUndefined();
-        return;
-    }
-    
-    while(input[start] == ' ') 
-    {
-        start++;
+        if (i >= sizeof(tempString))
+            Scr_Error("string too long");
+
+        c = s[start];
+
+        if(!c)
+            break;
+        
+        tempString[i] = c;
     }
 
-    if(input[start] == '\0') 
-    {
-        Scr_AddString("");
-        return;
-    }
-
-    end = strlen(input) - 1;
-    while(input[end] == ' ') 
-    {
-        end--;
-    }
-
-    for(i = start; i <= end; i++) 
-    {
-        result[i - start] = input[i];
-    }
-
-    Scr_AddString(result);
-}
-
-void gsc_utils_strstr()
-{
-    const char *str, *sub;
-    
-    if(!stackGetParams("ss", &str, &sub)) 
-    {
-        stackError("gsc_utils_strstr() arguments are undefined or have a wrong type");
-        Scr_AddUndefined();
-        return;
-    }
-
-    if (strstr(str, sub) != NULL) 
-    {
-        Scr_AddBool(qtrue);
-    } 
-    else 
-    {
-        Scr_AddBool(qfalse);
-    }
-}
-
-void gsc_utils_starts_with()
-{
-    const char *str, *sub;
-    
-    if(!stackGetParams("ss", &str, &sub)) 
-    {
-        stackError("gsc_utils_starts_with() arguments are undefined or have a wrong type");
-        Scr_AddUndefined();
-        return;
-    }
-
-    if (std::string(str).starts_with(sub)) 
-    {
-        Scr_AddBool(qtrue);
-    } 
-    else 
-    {
-        Scr_AddBool(qfalse);
-    }
+    tempString[i] = 0;
+    Scr_AddString(tempString);
 }

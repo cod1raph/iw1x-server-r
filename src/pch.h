@@ -21,5 +21,6 @@
 #include <sstream>      // ostringstream
 #include <string>
 #include <vector>
+#include <climits>      // INT_MAX
 
 #endif

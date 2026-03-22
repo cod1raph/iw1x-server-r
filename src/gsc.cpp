@@ -44,34 +44,31 @@ const char * stackGetParamTypeAsString(int param)
 scr_function_t scriptFunctions[] =
 {
 #if ENABLE_UNSAFE == 1
-    {"file_exists", gsc_utils_file_exists, 0},
-    {"fopen", gsc_utils_fopen, 0},
-    {"fwrite", gsc_utils_fwrite, 0},
-    {"fread", gsc_utils_fread, 0},
-    {"fclose", gsc_utils_fclose, 0},
+    {"file_exists", gsc_utils_file_exists, qfalse},
+    {"fopen", gsc_utils_fopen, qfalse},
+    {"fwrite", gsc_utils_fwrite, qfalse},
+    {"fread", gsc_utils_fread, qfalse},
+    {"fclose", gsc_utils_fclose, qfalse},
 #endif
 
-    {"sendCommandToClient", gsc_utils_sendcommandtoclient, 0},
-    {"logPrintConsole", gsc_utils_logprintconsole, 0},
-    {"toUpper", gsc_utils_toupper, 0},
-    {"toLower", gsc_utils_tolower, 0},
-    {"strtok", gsc_utils_strtok, 0},
-    {"replace", gsc_utils_replace, 0},
-    {"getSystemTime", gsc_utils_getsystemtime, 0},
-    {"getConfigString", gsc_utils_getconfigstring, 0},
-    {"makeLocalizedString", gsc_utils_makelocalizedstring, 0},
-    {"ban", gsc_utils_ban, 0},
-    {"unban", gsc_utils_unban, 0},
-    {"strip", gsc_utils_strip, 0},
-    {"strstr", gsc_utils_strstr, 0},
-    {"starts_with", gsc_utils_starts_with, 0},
+    {"sendCommandToClient", gsc_utils_sendcommandtoclient, qfalse},
+    {"logPrintConsole", gsc_utils_logprintconsole, qfalse},
+    {"replace", gsc_utils_replace, qfalse},
+    {"makeLocalizedString", gsc_utils_makelocalizedstring, qfalse},
+    {"toUpper", gsc_utils_toupper, qfalse},
+    {"toLower", gsc_utils_tolower, qfalse},
+    {"strTok", gsc_utils_strtok, qfalse},
+    {"isSubStr", gsc_utils_issubstr, qfalse},
+    {"getSubStr", gsc_utils_getsubstr, qfalse},
+    {"getSystemTime", gsc_utils_getsystemtime, qfalse},
+    {"getConfigString", gsc_utils_getconfigstring, qfalse},
+    
+    //// Weapons
+    {"setWeaponCookable", gsc_weapons_setweaponcookable, qfalse},
+    {"setWeaponFuseTime", gsc_weapons_setweaponfusetime, qfalse},
+    ////
 
-    // Weapons
-    {"setWeaponCookable", gsc_weapons_setweaponcookable, 0},
-    {"setWeaponFuseTime", gsc_weapons_setweaponfusetime, 0},
-    //
-
-    {"testFunction", gsc_testfunction, 0},
+    {"testFunction", gsc_testfunction, qfalse},
     {NULL, NULL, 0} // Terminator
 };
 
@@ -97,41 +94,41 @@ xfunction_t Scr_GetCustomFunction(const char **fname, int *fdev)
 scr_method_t scriptMethods[] =
 {
     //// Entity
-    {"showToPlayer", gsc_entity_showtoplayer, 0},
+    {"showToPlayer", gsc_entity_showtoplayer, qfalse},
     ////
 
     //// Player
-    {"aimButtonPressed", gsc_player_button_ads, 0},
-    {"leftButtonPressed", gsc_player_button_left, 0},
-    {"rightButtonPressed", gsc_player_button_right, 0},
-    {"forwardButtonPressed", gsc_player_button_forward, 0},
-    {"backButtonPressed", gsc_player_button_back, 0},
-    {"jumpButtonPressed", gsc_player_button_jump, 0},
-    {"leanleftButtonPressed", gsc_player_button_leanleft, 0},
-    {"leanRightButtonPressed", gsc_player_button_leanright, 0},
-    {"reloadButtonPressed", gsc_player_button_reload, 0},
+    {"aimButtonPressed", gsc_player_button_ads, qfalse},
+    {"leftButtonPressed", gsc_player_button_left, qfalse},
+    {"rightButtonPressed", gsc_player_button_right, qfalse},
+    {"forwardButtonPressed", gsc_player_button_forward, qfalse},
+    {"backButtonPressed", gsc_player_button_back, qfalse},
+    {"jumpButtonPressed", gsc_player_button_jump, qfalse},
+    {"leanleftButtonPressed", gsc_player_button_leanleft, qfalse},
+    {"leanRightButtonPressed", gsc_player_button_leanright, qfalse},
+    {"reloadButtonPressed", gsc_player_button_reload, qfalse},
 
-    {"getIP", gsc_player_getip, 0},
-    {"getPing", gsc_player_getping, 0},
-    {"getUserinfoKey", gsc_player_getuserinfokey, 0},
-    {"setUserinfoKey", gsc_player_setuserinfokey, 0},
-    {"processClientCommand", gsc_player_processclientcommand, 0},
-    {"connectionlessPacketToClient", gsc_player_connectionlesspackettoclient, 0},
-    {"dropClient", gsc_player_dropclient, 0},
-    {"setHiddenFromScoreboard", gsc_player_sethiddenfromscoreboard, 0},
-    {"setExpFogForPlayer", gsc_player_setexpfogforplayer, 0},
-    {"setAnimation", gsc_player_setanimation, 0},
-    {"setWeaponAnimation", gsc_player_setweaponanimation, 0},
+    {"getIP", gsc_player_getip, qfalse},
+    {"getPing", gsc_player_getping, qfalse},
+    {"getUserinfoKey", gsc_player_getuserinfokey, qfalse},
+    {"setUserinfoKey", gsc_player_setuserinfokey, qfalse},
+    {"processClientCommand", gsc_player_processclientcommand, qfalse},
+    {"connectionlessPacketToClient", gsc_player_connectionlesspackettoclient, qfalse},
+    {"dropClient", gsc_player_dropclient, qfalse},
+    {"setHiddenFromScoreboard", gsc_player_sethiddenfromscoreboard, qfalse},
+    {"setExpFogForPlayer", gsc_player_setexpfogforplayer, qfalse},
+    {"setAnimation", gsc_player_setanimation, qfalse},
+    {"setWeaponAnimation", gsc_player_setweaponanimation, qfalse},
 
-    {"getVelocity", gsc_player_getvelocity, 0},
-    {"setVelocity", gsc_player_setvelocity, 0},
-    {"addVelocity", gsc_player_addvelocity, 0},
-    {"getPlayerAngles", gsc_player_getangles, 0},
-    {"getStance", gsc_player_getstance, 0},
-    {"getViewOrigin", gsc_player_getvieworigin, 0},
-    {"isOnLadder", gsc_player_isonladder, 0},
-    {"ufo", gsc_player_ufo, 0},
-    {"isBot", gsc_player_isbot, 0},
+    {"getVelocity", gsc_player_getvelocity, qfalse},
+    {"setVelocity", gsc_player_setvelocity, qfalse},
+    {"addVelocity", gsc_player_addvelocity, qfalse},
+    {"getPlayerAngles", gsc_player_getangles, qfalse},
+    {"getStance", gsc_player_getstance, qfalse},
+    {"getViewOrigin", gsc_player_getvieworigin, qfalse},
+    {"isOnLadder", gsc_player_isonladder, qfalse},
+    {"ufo", gsc_player_ufo, qfalse},
+    {"isBot", gsc_player_isbot, qfalse},
     ////
 
     {"testMethod", gsc_testmethod, 0},

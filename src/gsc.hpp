@@ -25,11 +25,6 @@ int stackGetParamVector(int param, vec3_t value);
 int stackGetParamFloat(int param, float *value);
 int stackGetParamObject(int param, unsigned int *value);
 
-//// For tests
-void gsc_testfunction();
-void gsc_testmethod(scr_entref_t ref);
-////
-
 //// Entity
 void gsc_entity_showtoplayer(scr_entref_t ref);
 ////
@@ -81,18 +76,20 @@ void gsc_utils_fclose();
 
 void gsc_utils_sendcommandtoclient();
 void gsc_utils_logprintconsole();
+void gsc_utils_replace();
+void gsc_utils_makelocalizedstring();
 void gsc_utils_toupper();
 void gsc_utils_tolower();
 void gsc_utils_strtok();
-void gsc_utils_replace();
+void gsc_utils_issubstr();
+void gsc_utils_getsubstr();
 void gsc_utils_getsystemtime();
 void gsc_utils_getconfigstring();
-void gsc_utils_makelocalizedstring();
-void gsc_utils_ban();
-void gsc_utils_unban();
-void gsc_utils_strip();
-void gsc_utils_strstr();
-void gsc_utils_starts_with();
+////
+
+//// For tests
+void gsc_testfunction();
+void gsc_testmethod(scr_entref_t ref);
 ////
 
 #endif

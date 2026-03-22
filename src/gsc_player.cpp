@@ -1,7 +1,5 @@
 #include "gsc.hpp"
 
-extern cvar_t *player_sprintTime;
-
 void gsc_player_setvelocity(scr_entref_t ref)
 {
     int id = ref.entnum;
@@ -281,6 +279,7 @@ void gsc_player_getangles(scr_entref_t ref)
     Scr_AddVector(ps->viewangles);
 }
 
+// See https://github.com/xtnded/codextended/blob/50c43096543b300f1e87dcf5c3c9edf59367e85d/src/scr_method_player.c#L294
 void gsc_player_getstance(scr_entref_t ref)
 {
     int id = ref.entnum;
