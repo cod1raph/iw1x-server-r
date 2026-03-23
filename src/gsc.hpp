@@ -60,6 +60,7 @@ void gsc_player_sethiddenfromscoreboard(scr_entref_t ref);
 void gsc_player_setexpfogforplayer(scr_entref_t ref);
 void gsc_player_setanimation(scr_entref_t ref);
 void gsc_player_setweaponanimation(scr_entref_t ref);
+void gsc_player_setconfigstringforplayer(scr_entref_t ref);
 ////
 
 //// Weapons

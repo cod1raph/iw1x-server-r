@@ -493,19 +493,21 @@ void gsc_player_sethiddenfromscoreboard(scr_entref_t ref)
     Scr_AddBool(true);
 }
 
-void Scr_SetFogForPlayer(const char *cmd, float start, float density, float heightDensity, float r, float g, float b, float time, int clientNum)
+void Scr_SetFogForPlayer(float start, float density, float heightDensity, float r, float g, float b, float time, int clientNum)
 {
+    const char *cmdName = "setExpFogForPlayer";
+
     if(start < 0.0)
-        Scr_Error(va("%s: near distance must be >= 0", cmd));
+        Scr_Error(va("%s: near distance must be >= 0", cmdName));
 
     if(start >= density)
-        Scr_Error(va("%s: near distance must be less than far distance", cmd));
+        Scr_Error(va("%s: near distance must be less than far distance", cmdName));
 
     if(r < 0.0 || r > 1.0 || g < 0.0 || g > 1.0 || b < 0.0 || b > 1.0)
-        Scr_Error(va("%s: red/green/blue color components must be in the range [0, 1]", cmd));
+        Scr_Error(va("%s: red/green/blue color components must be in the range [0, 1]", cmdName));
 
     if(time < 0.0)
-        Scr_Error(va("%s: transition time must be >= 0 seconds", cmd));
+        Scr_Error(va("%s: transition time must be >= 0 seconds", cmdName));
 
     client_t *client = &svs.clients[clientNum];
     char configstring[MAX_STRINGLENGTH];
@@ -536,7 +538,7 @@ void gsc_player_setexpfogforplayer(scr_entref_t ref)
     if(density <= 0.0 || 1.0 <= density)
         Scr_Error("setExpFogForPlayer: density must be greater than 0 and less than 1");
     
-    Scr_SetFogForPlayer("setExpFogForPlayer", 0.0, 1.0, density, r, g, b, transitionTime, id);
+    Scr_SetFogForPlayer(0.0, 1.0, density, r, g, b, transitionTime, id);
 
     Scr_AddBool(qtrue);
 }
@@ -661,4 +663,34 @@ void gsc_player_getvieworigin(scr_entref_t ref)
     G_AddLean(gentity, viewOrigin);
 
     Scr_AddVector(viewOrigin);
+}
+
+void gsc_player_setconfigstringforplayer(scr_entref_t ref)
+{
+    int id = ref.entnum;
+
+    if (id >= MAX_CLIENTS)
+    {
+        stackError("gsc_player_setconfigstringforplayer() entity %i is not a player", id);
+        Scr_AddUndefined();
+        return;
+    }
+
+    char *value;
+    int index;
+
+    if (!stackGetParams("is", &index, &value))
+    {
+        stackError("gsc_player_setconfigstringforplayer() argument is undefined or has a wrong type");
+        Scr_AddUndefined();
+        return;
+    }
+
+    client_t *client = &svs.clients[id];
+    char cmd[MAX_STRINGLENGTH];
+
+    Com_sprintf(cmd, MAX_STRINGLENGTH, "d %i %s", index, value);
+    SV_SendServerCommand(client, SV_CMD_RELIABLE, cmd);
+
+    Scr_AddBool(qtrue);
 }

@@ -1113,7 +1113,8 @@ void custom_SVC_Status(netadr_t from)
         if (cl->state >= CS_CONNECTED)
         {
             int clientScore = 0;
-            
+            if(gvm)
+                clientScore = VM_Call(gvm, GAME_CLIENT_SCORE_GET, cl - svs.clients);
             Com_sprintf(player, sizeof(player), "%i %i \"%s\"\n", clientScore, cl->ping, cl->name);
             
             playerLength = strlen(player);

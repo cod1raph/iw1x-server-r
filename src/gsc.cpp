@@ -129,6 +129,7 @@ scr_method_t scriptMethods[] =
     {"isOnLadder", gsc_player_isonladder, qfalse},
     {"ufo", gsc_player_ufo, qfalse},
     {"isBot", gsc_player_isbot, qfalse},
+    {"setConfigstringForPlayer", gsc_player_setconfigstringforplayer, qfalse},
     ////
 
     {"testMethod", gsc_testmethod, 0},
