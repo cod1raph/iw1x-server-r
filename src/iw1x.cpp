@@ -1638,8 +1638,13 @@ void custom_SV_WriteDownloadToClient(client_t *cl, msg_t *msg)
     if (cl->downloadXmitBlock == cl->downloadCurrentBlock)
     {
         // FIXME: See https://github.com/id-Software/RTCW-MP/blob/937b209a3c14857bea09a692545c59ac1a241275/src/server/sv_client.c#L962
-        if(svs.time - cl->downloadSendTime > 1000)
+        // See https://github.com/ibuddieat/zk_libcod/blob/526bebb15685edb227df738bbdf9581ef30a56f0/code/libcod.cpp#L4440
+        if (svs.time - cl->downloadSendTime > 1000)
+        {
+            Com_DPrintf("clientDownload: %d : no acknowledge since %d ms, resending blocks\n", cl - svs.clients, 1000);
+            customPlayerState[cl - svs.clients].downloadTimedOut = true;
             cl->downloadXmitBlock = cl->downloadClientBlock;
+        }
         else
             return;
     }
@@ -1666,6 +1671,46 @@ void custom_SV_WriteDownloadToClient(client_t *cl, msg_t *msg)
     // It will get sent with next snapshot
     cl->downloadXmitBlock++;
     cl->downloadSendTime = svs.time;
+}
+
+void custom_SV_NextDownload_f(client_t *cl)
+{
+    int block = atoi(Cmd_Argv(1));
+    int clientNum = cl - svs.clients;
+    // See https://github.com/ibuddieat/zk_libcod/blob/526bebb15685edb227df738bbdf9581ef30a56f0/code/libcod.cpp#L4211
+    if (block == cl->downloadClientBlock)
+    {
+        customPlayerState[clientNum].downloadTimedOut = false;
+        
+        Com_DPrintf("clientDownload: %d : client acknowledge of block %d\n", clientNum, block);
+        
+        if (cl->downloadBlockSize[cl->downloadClientBlock % MAX_DOWNLOAD_WINDOW] == 0)
+        {
+            Com_Printf("clientDownload: %d : file \"%s\" completed\n", clientNum, cl->downloadName);
+            
+            if(cl->download)
+                SV_CloseDownload(cl->download);
+            cl->download = 0;
+            *cl->downloadName = 0;
+
+            for (int i = 0; i < MAX_DOWNLOAD_WINDOW; i++)
+            {
+                if (cl->downloadBlocks[i])
+                {
+                    Z_Free(cl->downloadBlocks[i]);
+                    cl->downloadBlocks[i] = NULL;
+                }
+            }
+
+            return;
+        }
+
+        cl->downloadSendTime = svs.time;
+        cl->downloadClientBlock++;
+        return;
+    }
+    
+    SV_DropClient(cl, "broken download");
 }
 
 // See https://github.com/voron00/CoD2rev_Server/blob/b012c4b45a25f7f80dc3f9044fe9ead6463cb5c6/src/server/sv_snapshot_mp.cpp#L686
@@ -1716,15 +1761,26 @@ void custom_SV_SendClientMessages(void)
 
         if (sv_fastDownload->integer && cl->download)
         {
-            // TODO: See about using "customPlayerState[i].downloadTimedOut" like in zk_libcod.
-            for (int j = 0; j < sv_fastDownloadSpeed->integer; j++)
+            // See https://github.com/ibuddieat/zk_libcod/blob/526bebb15685edb227df738bbdf9581ef30a56f0/code/libcod.cpp#L3782
+            if (customPlayerState[i].downloadTimedOut)
             {
-                cl->nextSnapshotTime = svs.time;
-                while (cl->netchan.unsentFragments)
+                if (cl->netchan.unsentFragments)
                 {
+                    cl->nextSnapshotTime = svs.time;
                     SV_Netchan_TransmitNextFragment(&cl->netchan);
+                    continue;
                 }
                 SV_SendClientSnapshot(cl);
+            }
+            else
+            {
+                for (int j = 0; j < sv_fastDownloadSpeed->integer; j++)
+                {
+                    cl->nextSnapshotTime = svs.time;
+                    while(cl->netchan.unsentFragments)
+                        SV_Netchan_TransmitNextFragment(&cl->netchan);
+                    SV_SendClientSnapshot(cl);
+                }
             }
         }
         else
@@ -2355,6 +2411,7 @@ class iw1x
         hook_jmp(0x0808c404, (int)custom_SVC_RemoteCommand);
         hook_jmp(0x0808bd58, (int)custom_SVC_Status);
         hook_jmp(0x08084524, (int)custom_SV_BanNum_f);
+        hook_jmp(0x08086168, (int)custom_SV_NextDownload_f);
         
         hook_Sys_LoadDll = new cHook(0x080c5fe4, (int)custom_Sys_LoadDll);
         hook_Sys_LoadDll->hook();

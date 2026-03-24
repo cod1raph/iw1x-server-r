@@ -815,17 +815,17 @@ typedef struct client_s
     char lastClientCommandString[MAX_STRINGLENGTH];
     gentity_t *gentity;
     char name[MAX_NAME_LENGTH];
-    char downloadName[MAX_QPATH];
-    fileHandle_t download;
-    int downloadSize;
-    int downloadCount;
-    int downloadClientBlock;
+    char downloadName[MAX_QPATH];   // 0x10a64
+    fileHandle_t download;          // 10AA4
+    int downloadSize;               // 10AA8
+    int downloadCount;              // 10AAC
+    int downloadClientBlock;        // 0x10ab0
     int downloadCurrentBlock;
     int downloadXmitBlock;
-    unsigned char *downloadBlocks[MAX_DOWNLOAD_WINDOW];
-    int downloadBlockSize[MAX_DOWNLOAD_WINDOW];
-    qboolean downloadEOF;
-    int downloadSendTime;
+    unsigned char *downloadBlocks[MAX_DOWNLOAD_WINDOW]; // 0x10abc
+    int downloadBlockSize[MAX_DOWNLOAD_WINDOW];         // 0x10adc
+    qboolean downloadEOF;           // 10AFC
+    int downloadSendTime;           // 0x10b00
     int deltaMessage;
     int nextReliableTime;
     int lastPacketTime;
@@ -1110,6 +1110,7 @@ typedef struct customPlayerState_s
 {
     bool hiddenFromScoreboard;
     int animation;
+    bool downloadTimedOut;
 } customPlayerState_t;
 
 typedef struct customChallenge_s

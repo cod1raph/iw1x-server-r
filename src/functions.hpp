@@ -10,6 +10,9 @@ static const Cbuf_ExecuteText_t Cbuf_ExecuteText = (Cbuf_ExecuteText_t)0x0805a8a
 typedef void* (*Z_MallocInternal_t)(int size);
 static const Z_MallocInternal_t Z_MallocInternal = (Z_MallocInternal_t)0x080681e8;
 
+typedef void (*Z_Free_t)(void *ptr);
+static const Z_Free_t Z_Free = (Z_Free_t)0x08068224;
+
 typedef void (*Hunk_ClearTempMemoryInternal_t)(void);
 static const Hunk_ClearTempMemoryInternal_t Hunk_ClearTempMemoryInternal = (Hunk_ClearTempMemoryInternal_t)0x080686a0;
 
@@ -518,6 +521,9 @@ static const SV_CanReplaceServerCommand_t SV_CanReplaceServerCommand = (SV_CanRe
 
 typedef void (*SV_FlushRedirect_t)(char *outputbuf);
 static const SV_FlushRedirect_t SV_FlushRedirect = (SV_FlushRedirect_t)0x0808d318;
+
+typedef void (*SV_CloseDownload_t)(fileHandle_t download);
+static const SV_CloseDownload_t SV_CloseDownload = (SV_CloseDownload_t)0x0805c114;
 ////
 
 //// SVC
