@@ -8,7 +8,7 @@ void gsc_entity_showtoplayer(scr_entref_t ref)
     gentity_t *pEnt;
 
     pEnt = &g_entities[id];
-    if (Scr_GetType(0) == STACK_UNDEFINED)
+    if (Scr_GetType(0) == VAR_UNDEFINED)
     {
         pEnt->r.svFlags &= ~SVF_SINGLECLIENT;
         pEnt->r.singleClient = 0;

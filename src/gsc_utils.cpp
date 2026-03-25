@@ -27,13 +27,6 @@ void gsc_utils_logprintconsole()
         return;
     }
 
-    if (!strlen(str) || strlen(str) > MAX_STRINGLENGTH)
-    {
-        stackError("gsc_utils_logprintconsole() invalid string length");
-        Scr_AddUndefined();
-        return;
-    }
-
     Com_Printf("%s", str);
 
     Scr_AddBool(qtrue);
@@ -60,12 +53,13 @@ void gsc_utils_toupper()
     Scr_AddString(Q_strupr(str));
 }
 
-void gsc_utils_tolower() // From cod2rev
+// See https://github.com/voron00/CoD2rev_Server/blob/79850694857ddd6af909b375a8310a8c1d7e752f/src/game/g_scr_main_mp.cpp#L3162
+void gsc_utils_tolower()
 {
-    char c;
-    int i;
-    const char *string;
+    size_t i;
+    int c;
     char tempString[MAX_STRINGLENGTH];
+    const char *string;
 
     if (!stackGetParams("s", &string))
     {
@@ -74,7 +68,7 @@ void gsc_utils_tolower() // From cod2rev
         return;
     }
 
-    for (i = 0; i < MAX_STRINGLENGTH; ++i)
+    for (i = 0; i < sizeof(tempString); i++, string++)
     {
         c = tolower(*string);
         tempString[i] = c;
@@ -84,41 +78,36 @@ void gsc_utils_tolower() // From cod2rev
             Scr_AddString(tempString);
             return;
         }
-
-        ++string;
     }
-
-    stackError("gsc_utils_tolower() string too long");
+    
+    Scr_Error("string too long");
 }
 
-void gsc_utils_strtok() // From cod2rev
+// See https://github.com/voron00/CoD2rev_Server/blob/79850694857ddd6af909b375a8310a8c1d7e752f/src/game/g_scr_main_mp.cpp#L3094
+void gsc_utils_strtok()
 {
-    signed int j;
-    char c;
-    int dest;
-    int i;
-    signed int len;
-    const char *tok;
-    const char *delim;
-    char tempString[1024];
+    size_t i, source;
+    size_t dest = 0;
+    int c;
+    char tempString[MAX_STRINGLENGTH];
 
-    delim = Scr_GetString(0);
-    tok = Scr_GetString(1u);
-    len = strlen(tok);
-    dest = 0;
+    const char *s = Scr_GetString(0);
+    const char *delim = Scr_GetString(1);
 
+    size_t delimLen = strlen(delim);
+    
     Scr_MakeArray();
-
-    for (i = 0; ; ++i)
+    
+    for (source = 0; ; source++)
     {
-        c = delim[i];
+        c = s[source];
 
         if (!c)
             break;
 
-        for (j = 0; j < len; ++j)
+        for (i = 0; i < delimLen; i++)
         {
-            if (c == tok[j])
+            if (c == delim[i])
             {
                 if (dest)
                 {
@@ -128,82 +117,27 @@ void gsc_utils_strtok() // From cod2rev
                     dest = 0;
                 }
 
-                goto skip;
+                break;
             }
         }
 
-        tempString[dest] = c;
+        if (c != delim[i])
+        {
+            tempString[dest] = c;
+            dest++;
 
-        if (++dest > 1023)
-            stackError("gsc_utils_strtok() string too long");
-skip:
-        ;
+            if(dest >= sizeof(tempString))
+                Scr_Error("string too long");
+        }
     }
 
-    if (dest)
-    {
-        tempString[dest] = 0;
-        Scr_AddString(tempString);
-        Scr_AddArray();
-    }
-}
-
-// This function is here only for MiscMod users
-void gsc_utils_replace()
-{
-    char* orig;
-    char* rep;
-    char* with;
-
-    if (!stackGetParams("sss", &orig, &rep, &with))
-    {
-        stackError("gsc_utils_replace() one or more arguments is undefined or has a wrong type");
-        Scr_AddUndefined();
-        return;
-    }
-    
-    char *result; // the return string
-    char *ins; // the next insert point
-    char *tmp; // varies
-    int len_rep; // length of rep
-    int len_with; // length of with
-    int len_front; // distance between rep and end of last rep
-    int count; // number of replacements
-
-    if (!orig)
-        return;
-    if (!rep || !(len_rep = strlen(rep)))
-        return;
-    if (!(ins = strstr(orig, rep))) 
-        return;
-    if (!with)
-        with = (char*)"";
-    len_with = strlen(with);
-
-    for (count = 0; (tmp = strstr(ins, rep)); ++count) {
-        ins = tmp + len_rep;
-    }
-
-    // first time through the loop, all the variable are set correctly
-    // from here on,
-    //    tmp points to the end of the result string
-    //    ins points to the next occurrence of rep in orig
-    //    orig points to the remainder of orig after "end of rep"
-    tmp = result = (char*)malloc(strlen(orig) + (len_with - len_rep) * count + 1);
-
-    if (!result)
+    if(!dest)
         return;
 
-    while (count--) {
-        ins = strstr(orig, rep);
-        len_front = ins - orig;
-        tmp = strncpy(tmp, orig, len_front) + len_front;
-        tmp = strcpy(tmp, with) + len_with;
-        orig += len_front + len_rep; // move to next "end of rep"
-    }
-    strcpy(tmp, orig);
-    
-    Scr_AddString(result);
+    tempString[dest] = 0;
+
+    Scr_AddString(tempString);
+    Scr_AddArray();
 }
 
 void gsc_utils_file_exists()
@@ -368,7 +302,7 @@ void gsc_utils_makelocalizedstring()
     int param = 0;
 
     var = &scrVmPub.top[-param];
-    var->type = STACK_LOCALIZED_STRING;
+    var->type = VAR_ISTRING;
 }
 
 void gsc_utils_issubstr()

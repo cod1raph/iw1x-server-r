@@ -3,27 +3,15 @@
 
 #include "shared.hpp"
 
-#define STACK_UNDEFINED 0
-#define STACK_STRING 1
-#define STACK_LOCALIZED_STRING 2
-#define STACK_VECTOR 3
-#define STACK_FLOAT 4
-#define STACK_INT 5
-#define STACK_OBJECT 7
-#define STACK_FUNCTION 9
-
-const char * stackGetParamTypeAsString(int param);
 int stackGetParams(const char *params, ...);
 void stackError(const char *format, ...);
 
 int stackGetParamInt(int param, int *value);
-int stackGetParamFunction(int param, int *value);
 int stackGetParamString(int param, char **value);
 int stackGetParamConstString(int param, unsigned int *value);
 int stackGetParamLocalizedString(int param, char **value);
 int stackGetParamVector(int param, vec3_t value);
 int stackGetParamFloat(int param, float *value);
-int stackGetParamObject(int param, unsigned int *value);
 
 //// Entity
 void gsc_entity_showtoplayer(scr_entref_t ref);
@@ -45,8 +33,8 @@ void gsc_player_button_reload(scr_entref_t ref);
 void gsc_player_getangles(scr_entref_t ref);
 void gsc_player_getstance(scr_entref_t ref);
 void gsc_player_getvieworigin(scr_entref_t ref);
-void gsc_player_getuserinfokey(scr_entref_t ref);
-void gsc_player_setuserinfokey(scr_entref_t ref);
+void gsc_player_getuserinfo(scr_entref_t ref);
+void gsc_player_setuserinfo(scr_entref_t ref);
 void gsc_player_getip(scr_entref_t ref);
 void gsc_player_getping(scr_entref_t ref);
 void gsc_player_processclientcommand(scr_entref_t ref);
@@ -56,7 +44,6 @@ void gsc_player_isonladder(scr_entref_t ref);
 void gsc_player_ufo(scr_entref_t ref);
 void gsc_player_connectionlesspackettoclient(scr_entref_t ref);
 void gsc_player_isbot(scr_entref_t ref);
-void gsc_player_sethiddenfromscoreboard(scr_entref_t ref);
 void gsc_player_setexpfogforplayer(scr_entref_t ref);
 void gsc_player_setanimation(scr_entref_t ref);
 void gsc_player_setweaponanimation(scr_entref_t ref);
@@ -78,7 +65,6 @@ void gsc_utils_fclose();
 
 void gsc_utils_sendcommandtoclient();
 void gsc_utils_logprintconsole();
-void gsc_utils_replace();
 void gsc_utils_makelocalizedstring();
 void gsc_utils_toupper();
 void gsc_utils_tolower();

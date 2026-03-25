@@ -1,49 +1,8 @@
 #include "gsc.hpp"
 
-const char * getParamTypeAsString(int type)
-{
-    switch (type)
-    {
-        case 0: return "undefined";
-        case 1: return "string";
-        case 2: return "localized string";
-        case 3: return "vector";
-        case 4: return "float";
-        case 5: return "int";
-        case 6: return "codepos";
-        case 7: return "object";
-        case 8: return "key/value";
-        case 9: return "function";
-        case 10: return "stack";
-        case 11: return "animation";
-        case 12: return "thread";
-        case 13: return "entity";
-        case 14: return "struct";
-        case 15: return "array";
-        case 16: return "dead thread";
-        case 17: return "dead entity";
-        case 18: return "dead object";
-        default: return "unknown type";
-    }
-}
-
-const char * stackGetParamTypeAsString(int param)
-{
-    if(param >= Scr_GetNumParam())
-        return "undefined";
-
-    VariableValue *var;
-    var = &scrVmPub.top[-param];
-
-    if(var->type == 7) // Pointer to object
-        return getParamTypeAsString(Scr_GetPointerType(param));
-    else
-        return getParamTypeAsString(var->type);
-}
-
 scr_function_t scriptFunctions[] =
 {
-#if ENABLE_UNSAFE == 1
+#if ENABLE_FILE_HANDLING == 1
     {"file_exists", gsc_utils_file_exists, qfalse},
     {"fopen", gsc_utils_fopen, qfalse},
     {"fwrite", gsc_utils_fwrite, qfalse},
@@ -53,7 +12,6 @@ scr_function_t scriptFunctions[] =
 
     {"sendCommandToClient", gsc_utils_sendcommandtoclient, qfalse},
     {"logPrintConsole", gsc_utils_logprintconsole, qfalse},
-    {"replace", gsc_utils_replace, qfalse},
     {"makeLocalizedString", gsc_utils_makelocalizedstring, qfalse},
     {"toUpper", gsc_utils_toupper, qfalse},
     {"toLower", gsc_utils_tolower, qfalse},
@@ -98,6 +56,9 @@ scr_method_t scriptMethods[] =
     ////
 
     //// Player
+    {"isOnLadder", gsc_player_isonladder, qfalse},
+    {"isBot", gsc_player_isbot, qfalse},
+
     {"aimButtonPressed", gsc_player_button_ads, qfalse},
     {"leftButtonPressed", gsc_player_button_left, qfalse},
     {"rightButtonPressed", gsc_player_button_right, qfalse},
@@ -110,27 +71,25 @@ scr_method_t scriptMethods[] =
 
     {"getIP", gsc_player_getip, qfalse},
     {"getPing", gsc_player_getping, qfalse},
-    {"getUserinfoKey", gsc_player_getuserinfokey, qfalse},
-    {"setUserinfoKey", gsc_player_setuserinfokey, qfalse},
-    {"processClientCommand", gsc_player_processclientcommand, qfalse},
-    {"connectionlessPacketToClient", gsc_player_connectionlesspackettoclient, qfalse},
-    {"dropClient", gsc_player_dropclient, qfalse},
-    {"setHiddenFromScoreboard", gsc_player_sethiddenfromscoreboard, qfalse},
-    {"setExpFogForPlayer", gsc_player_setexpfogforplayer, qfalse},
-    {"setAnimation", gsc_player_setanimation, qfalse},
-    {"setWeaponAnimation", gsc_player_setweaponanimation, qfalse},
-
+    {"getUserinfo", gsc_player_getuserinfo, qfalse},
     {"getVelocity", gsc_player_getvelocity, qfalse},
-    {"setVelocity", gsc_player_setvelocity, qfalse},
-    {"addVelocity", gsc_player_addvelocity, qfalse},
     {"getPlayerAngles", gsc_player_getangles, qfalse},
     {"getStance", gsc_player_getstance, qfalse},
     {"getViewOrigin", gsc_player_getvieworigin, qfalse},
-    {"isOnLadder", gsc_player_isonladder, qfalse},
-    {"ufo", gsc_player_ufo, qfalse},
-    {"isBot", gsc_player_isbot, qfalse},
-    {"setConfigstringForPlayer", gsc_player_setconfigstringforplayer, qfalse},
+    
     {"setStance", gsc_player_setstance, qfalse},
+    {"setVelocity", gsc_player_setvelocity, qfalse},
+    {"addVelocity", gsc_player_addvelocity, qfalse},
+    {"setUserinfo", gsc_player_setuserinfo, qfalse},
+    {"setConfigstringForPlayer", gsc_player_setconfigstringforplayer, qfalse},
+    {"setAnimation", gsc_player_setanimation, qfalse},
+    {"setWeaponAnimation", gsc_player_setweaponanimation, qfalse},
+    {"setExpFogForPlayer", gsc_player_setexpfogforplayer, qfalse},
+    {"ufo", gsc_player_ufo, qfalse},
+    
+    {"dropClient", gsc_player_dropclient, qfalse},
+    {"processClientCommand", gsc_player_processclientcommand, qfalse},
+    {"connectionlessPacketToClient", gsc_player_connectionlesspackettoclient, qfalse},
     ////
 
     {"testMethod", gsc_testmethod, 0},
@@ -261,7 +220,7 @@ int stackGetParams(const char *params, ...)
     }
 
     va_end(args);
-    return errors == 0; // success if no errors
+    return errors == 0; // Success if no errors
 }
 
 int stackGetParamInt(int param, int *value)
@@ -272,34 +231,16 @@ int stackGetParamInt(int param, int *value)
     VariableValue *var;
     var = &scrVmPub.top[-param];
 
-    if (var->type == STACK_FLOAT)
+    if (var->type == VAR_FLOAT)
     {
         *value = var->u.floatValue;
         return 1;
     }
 
-    if(var->type != STACK_INT)
+    if(var->type != VAR_INTEGER)
         return 0;
 
     *value = var->u.intValue;
-
-    return 1;
-}
-
-int stackGetParamFunction(int param, int *value)
-{
-    printf("####### stackGetParamFunction\n");
-
-    if(param >= Scr_GetNumParam())
-        return 0;
-
-    VariableValue *var;
-    var = &scrVmPub.top[-param];
-
-    if(var->type != STACK_FUNCTION)
-        return 0;
-
-    *value = var->u.codePosValue - scrVarPub.programBuffer;
 
     return 1;
 }
@@ -312,7 +253,7 @@ int stackGetParamString(int param, char **value)
     VariableValue *var;
     var = &scrVmPub.top[-param];
 
-    if(var->type != STACK_STRING)
+    if(var->type != VAR_STRING)
         return 0;
 
     *value = SL_ConvertToString(var->u.stringValue);
@@ -328,7 +269,7 @@ int stackGetParamConstString(int param, unsigned int *value)
     VariableValue *var;
     var = &scrVmPub.top[-param];
 
-    if(var->type != STACK_STRING)
+    if(var->type != VAR_STRING)
         return 0;
 
     *value = var->u.stringValue;
@@ -344,7 +285,7 @@ int stackGetParamLocalizedString(int param, char **value)
     VariableValue *var;
     var = &scrVmPub.top[-param];
 
-    if(var->type != STACK_LOCALIZED_STRING)
+    if(var->type != VAR_ISTRING)
         return 0;
 
     *value = SL_ConvertToString(var->u.stringValue);
@@ -360,7 +301,7 @@ int stackGetParamVector(int param, vec3_t value)
     VariableValue *var;
     var = &scrVmPub.top[-param];
 
-    if(var->type != STACK_VECTOR)
+    if(var->type != VAR_VECTOR)
         return 0;
 
     VectorCopy(var->u.vectorValue, value);
@@ -376,32 +317,16 @@ int stackGetParamFloat(int param, float *value)
     VariableValue *var;
     var = &scrVmPub.top[-param];
 
-    if (var->type == STACK_INT)
+    if (var->type == VAR_INTEGER)
     {
         *value = var->u.intValue;
         return 1;
     }
 
-    if(var->type != STACK_FLOAT)
+    if(var->type != VAR_FLOAT)
         return 0;
 
     *value = var->u.floatValue;
-
-    return 1;
-}
-
-int stackGetParamObject(int param, unsigned int *value)
-{
-    if(param >= Scr_GetNumParam())
-        return 0;
-
-    VariableValue *var;
-    var = &scrVmPub.top[-param];
-
-    if(var->type != STACK_OBJECT)
-        return 0;
-
-    *value = var->u.pointerValue;
 
     return 1;
 }

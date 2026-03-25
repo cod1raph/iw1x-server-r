@@ -314,7 +314,7 @@ typedef enum
     ANIM_ET_SHELLSHOCK,         // CRASH
 
     NUM_ANIM_EVENTTYPES
-} scriptAnimEventTypes_t;
+} scriptAnimEventTypes_t; // TODO: verify
 
 enum weapAnimNumber_t
 {
@@ -337,6 +337,19 @@ enum weapAnimNumber_t
 	WEAP_ALTSWITCHTO = 0x10,
 	MAX_WP_ANIMATIONS = 0x11,
 }; // TODO: verify
+
+enum var_type_t
+{
+    VAR_UNDEFINED = 0,
+    VAR_STRING = 1,
+    VAR_ISTRING = 2,
+    VAR_VECTOR = 3,
+    VAR_FLOAT = 4,
+    VAR_INTEGER = 5,
+    VAR_OBJECT = 7,
+    VAR_FUNCTION = 9
+    //...
+};
 
 typedef void (*xcommand_t)(void);
 
@@ -1111,7 +1124,6 @@ typedef struct src_error_s
 
 typedef struct customPlayerState_s
 {
-    bool hiddenFromScoreboard;
     int animation;
     bool downloadTimedOut;
 } customPlayerState_t;

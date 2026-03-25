@@ -1356,9 +1356,6 @@ void Scr_CodeCallback_Error(qboolean terminal, qboolean emit, const char *intern
     {
         if (!strncmp(message, "exceeded maximum number of script variables", 43))
         {
-            /* Since we cannot allocate more script variables, further
-             execution of scripts or script callbacks could lead to an
-             undefined state (in script) or endless error loops, so we stop */
             Com_Error(ERR_DROP, "\x15%s", "exceeded maximum number of script variables");
         }
 
@@ -1372,11 +1369,6 @@ void Scr_CodeCallback_Error(qboolean terminal, qboolean emit, const char *intern
         }
         else
         {
-            /* If the error is non-critical (not stopping the server), save it
-             so we can emit it later at G_RunFrame which is a rather safe
-             spot compared to if we emit it directly here within the
-             internals of the scripting engine where we risk crashing it
-             with a segmentation fault */
             if (scr_errors_index < MAX_ERROR_BUFFER)
             {
                 strncpy(scr_errors[scr_errors_index].internal_function, internal_function, sizeof(scr_errors[scr_errors_index].internal_function));
@@ -1385,7 +1377,7 @@ void Scr_CodeCallback_Error(qboolean terminal, qboolean emit, const char *intern
             }
             else
             {
-                printf("Warning: Errors buffer full, not calling CodeCallback_Error for '%s'\n", message);
+                printf("WARNING: Errors buffer full, not calling CodeCallback_Error for '%s'\n", message);
             }
         }
     }
@@ -2134,8 +2126,6 @@ void custom_DeathmatchScoreboardMessage(gentity_t *ent)
     {
         clientNum = level->sortedClients[i];
         client = &level->clients[clientNum];
-        if(customPlayerState[clientNum].hiddenFromScoreboard)
-            continue;
         
         if (client->sess.connected == CON_CONNECTING)
         {

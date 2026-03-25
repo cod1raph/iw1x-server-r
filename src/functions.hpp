@@ -7,12 +7,6 @@ extern va_t va;
 typedef void (*Cbuf_ExecuteText_t)(cbufExec_t exec_when, const char* text);
 static const Cbuf_ExecuteText_t Cbuf_ExecuteText = (Cbuf_ExecuteText_t)0x0805a8a0;
 
-typedef void* (*Z_MallocInternal_t)(int size);
-static const Z_MallocInternal_t Z_MallocInternal = (Z_MallocInternal_t)0x080681e8;
-
-typedef void (*Z_Free_t)(void *ptr);
-static const Z_Free_t Z_Free = (Z_Free_t)0x08068224;
-
 typedef void (*Hunk_ClearTempMemoryInternal_t)(void);
 static const Hunk_ClearTempMemoryInternal_t Hunk_ClearTempMemoryInternal = (Hunk_ClearTempMemoryInternal_t)0x080686a0;
 
@@ -551,4 +545,12 @@ extern trap_GetConfigstring_t trap_GetConfigstring;
 
 typedef void (*trap_SetConfigstring_t)(int index, const char *val);
 extern trap_SetConfigstring_t trap_SetConfigstring;
+////
+
+//// Z
+typedef void* (*Z_MallocInternal_t)(int size);
+static const Z_MallocInternal_t Z_MallocInternal = (Z_MallocInternal_t)0x080681e8;
+
+typedef void (*Z_Free_t)(void *ptr);
+static const Z_Free_t Z_Free = (Z_Free_t)0x08068224;
 ////

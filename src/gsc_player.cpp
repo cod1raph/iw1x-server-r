@@ -66,21 +66,21 @@ void gsc_player_addvelocity(scr_entref_t ref)
     Scr_AddBool(qtrue);
 }
 
-void gsc_player_getuserinfokey(scr_entref_t ref)
+void gsc_player_getuserinfo(scr_entref_t ref)
 {
     int id = ref.entnum;
     char *key;
 
     if (!stackGetParams("s", &key))
     {
-        stackError("gsc_player_getuserinfokey() argument is undefined or has a wrong type");
+        stackError("gsc_player_getuserinfo() argument is undefined or has a wrong type");
         Scr_AddUndefined();
         return;
     }
 
     if (id >= MAX_CLIENTS)
     {
-        stackError("gsc_player_getuserinfokey() entity %i is not a player", id);
+        stackError("gsc_player_getuserinfo() entity %i is not a player", id);
         Scr_AddUndefined();
         return;
     }
@@ -94,21 +94,21 @@ void gsc_player_getuserinfokey(scr_entref_t ref)
         Scr_AddString("");
 }
 
-void gsc_player_setuserinfokey(scr_entref_t ref)
+void gsc_player_setuserinfo(scr_entref_t ref)
 {
     int id = ref.entnum;
     char *key, *value;
 
     if (!stackGetParams("ss", &key, &value))
     {
-        stackError("gsc_player_setuserinfokey() one or more arguments is undefined or has a wrong type");
+        stackError("gsc_player_setuserinfo() one or more arguments is undefined or has a wrong type");
         Scr_AddUndefined();
         return;
     }
 
     if (id >= MAX_CLIENTS)
     {
-        stackError("gsc_player_setuserinfokey() entity %i is not a player", id);
+        stackError("gsc_player_setuserinfo() entity %i is not a player", id);
         Scr_AddUndefined();
         return;
     }
@@ -475,22 +475,6 @@ void gsc_player_isbot(scr_entref_t ref)
     client_t *client = &svs.clients[id];
 
     Scr_AddBool(client->bIsTestClient);
-}
-void gsc_player_sethiddenfromscoreboard(scr_entref_t ref)
-{
-    int id = ref.entnum;
-
-    if (id >= MAX_CLIENTS)
-    {
-        stackError("gsc_player_sethiddenfromscoreboard() entity %i is not a player", id);
-        Scr_AddUndefined();
-        return;
-    }
-
-    bool hidden = Scr_GetInt(0);
-    customPlayerState[id].hiddenFromScoreboard = hidden;
-
-    Scr_AddBool(true);
 }
 
 void Scr_SetFogForPlayer(float start, float density, float heightDensity, float r, float g, float b, float time, int clientNum)

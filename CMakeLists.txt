@@ -11,32 +11,24 @@ set(SEPARATOR "---------------------")
 # -fpic:    Position-independent code
 # -Wall:    Enable all warnings
 # -fvisibility=hidden: Hide symbols
-set(CMAKE_CXX_FLAGS "-m32 -fpic -Wall -fvisibility=hidden")
+# -g:       Include debug info
+# -ggdb:    Debug info for gdb
+
+set(CMAKE_CXX_FLAGS "-m32 -fpic -Wall -fvisibility=hidden -g -ggdb")
 set(CMAKE_SHARED_LINKER_FLAGS "-m32")
 set(CMAKE_LIBRARY_PATH "/lib32" "/usr/lib32" "/usr/lib/i386-linux-gnu" ${CMAKE_LIBRARY_PATH})
 
 # Options
-option(DEBUG_BUILD "Include debug info, no optimization" OFF)
-option(ENABLE_UNSAFE "Enable risky features (fread, fwrite...)" OFF)
+option(FILE_HANDLING "Enable stdio functions (fread, fwrite...)" OFF)
 
 message(STATUS "${SEPARATOR}")
-message(STATUS "Debug: ${DEBUG_BUILD}")
-message(STATUS "Risky features: ${ENABLE_UNSAFE}")
+message(STATUS "FILE_HANDLING: ${FILE_HANDLING}")
 message(STATUS "${SEPARATOR}")
 
-# -g:       Include debug info
-# -ggdb:    Debug info for gdb
-# -O2:      Moderate optimization
-if(DEBUG_BUILD)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -ggdb")
+if(FILE_HANDLING)
+    add_definitions(-DENABLE_FILE_HANDLING=1)
 else()
-    #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")
-endif()
-
-if(ENABLE_UNSAFE)
-    add_definitions(-DENABLE_UNSAFE=1)
-else()
-    add_definitions(-DENABLE_UNSAFE=0)
+    add_definitions(-DENABLE_FILE_HANDLING=0)
 endif()
 
 # Source files
