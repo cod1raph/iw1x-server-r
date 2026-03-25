@@ -47,6 +47,7 @@ animScriptData_t **globalScriptData;
 // Functions
 G_Say_t G_Say;
 G_AddLean_t G_AddLean;
+G_AddPredictableEvent_t G_AddPredictableEvent;
 trap_SendServerCommand_t trap_SendServerCommand;
 trap_GetConfigstringConst_t trap_GetConfigstringConst;
 trap_GetConfigstring_t trap_GetConfigstring;
@@ -2311,6 +2312,7 @@ void *custom_Sys_LoadDll(const char *name, char *fqpath, int (**entryPoint)(int,
     G_LocalizedStringIndex = (G_LocalizedStringIndex_t)dlsym(libHandle, "G_LocalizedStringIndex");
     trap_SetConfigstring = (trap_SetConfigstring_t)dlsym(libHandle, "trap_SetConfigstring");
     Scr_GetPointerType = (Scr_GetPointerType_t)dlsym(libHandle, "Scr_GetPointerType");
+    G_AddPredictableEvent = (G_AddPredictableEvent_t)dlsym(libHandle, "G_AddPredictableEvent");
     ////
 
     //// [exploit patch] codmsgboom

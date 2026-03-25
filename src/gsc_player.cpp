@@ -694,3 +694,44 @@ void gsc_player_setconfigstringforplayer(scr_entref_t ref)
 
     Scr_AddBool(qtrue);
 }
+
+void gsc_player_setstance(scr_entref_t ref)
+{
+    int id = ref.entnum;
+    char *stance;
+
+    if (!stackGetParams("s", &stance))
+    {
+        stackError("gsc_player_setstance() argument is undefined or has a wrong type");
+        Scr_AddUndefined();
+        return;
+    }
+
+    gentity_t *entity = &g_entities[id];
+
+    if (entity->client == NULL)
+    {
+        stackError("gsc_player_setstance() entity %i is not a player", id);
+        Scr_AddUndefined();
+        return;
+    }
+
+    int event;
+
+    if(!strcmp(stance, "stand"))
+        event = EV_STANCE_FORCE_STAND;
+    else if(!strcmp(stance, "crouch"))
+        event = EV_STANCE_FORCE_CROUCH;
+    else if(!strcmp(stance, "prone"))
+        event = EV_STANCE_FORCE_PRONE;
+    else
+    {
+        stackError("gsc_player_setstance() invalid argument '%s'. Valid arguments are: 'stand', 'crouch', 'prone'", stance);
+        Scr_AddUndefined();
+        return;
+    }
+
+    G_AddPredictableEvent(entity, event, 0);
+
+    Scr_AddBool(qtrue);
+}

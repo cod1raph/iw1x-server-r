@@ -170,6 +170,9 @@ extern G_LocalizedStringIndex_t G_LocalizedStringIndex;
 
 typedef void (*G_AddLean_t)(gentity_t *ent, vec3_t origin);
 extern G_AddLean_t G_AddLean;
+
+typedef void (*G_AddPredictableEvent_t)(gentity_t *ent, int event, int eventParm);
+extern G_AddPredictableEvent_t G_AddPredictableEvent;
 ////
 
 //// Get

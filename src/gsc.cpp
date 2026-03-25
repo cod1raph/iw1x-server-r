@@ -130,6 +130,7 @@ scr_method_t scriptMethods[] =
     {"ufo", gsc_player_ufo, qfalse},
     {"isBot", gsc_player_isbot, qfalse},
     {"setConfigstringForPlayer", gsc_player_setconfigstringforplayer, qfalse},
+    {"setStance", gsc_player_setstance, qfalse},
     ////
 
     {"testMethod", gsc_testmethod, 0},

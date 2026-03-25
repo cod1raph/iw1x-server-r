@@ -201,7 +201,10 @@ enum fsMode_t
 
 typedef enum
 {
+    // ...
     EV_STANCE_FORCE_STAND = 0x8c,
+    EV_STANCE_FORCE_CROUCH = 0x8d,
+    EV_STANCE_FORCE_PRONE = 0x8e
     // ...
 } entity_event_t;
 
