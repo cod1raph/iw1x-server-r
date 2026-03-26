@@ -86,13 +86,9 @@
 
 typedef enum
 {
-    ERR_FATAL = 0x0,
-    ERR_VID_FATAL = 0x1,
-    ERR_DROP = 0x2,
-    ERR_SERVERDISCONNECT = 0x3,
-    ERR_DISCONNECT = 0x4,
-    ERR_NEED_CD = 0x5,
-    ERR_AUTOUPDATE = 0x6,
+    //...
+    ERR_DROP = 0x1,
+    //...
 } errorParm_t;
 
 enum svc_ops_e
@@ -419,8 +415,6 @@ union VariableUnion
     float floatValue;
     unsigned int stringValue;
     const float *vectorValue;
-    const char *codePosValue;
-    unsigned int pointerValue;
     //...
 };
 
@@ -433,12 +427,8 @@ typedef struct
 typedef struct
 {
     const char *fieldBuffer;
-    byte gap[0x4176];
-    unsigned int levelId;
-    //...
-    const char *programBuffer;
-    //... 
-} scrVarPub_t; // TODO: finish setup
+    //...    
+} scrVarPub_t;
 
 typedef struct
 {
@@ -446,7 +436,39 @@ typedef struct
     byte gap[356];
     VariableValue *top;
     //...
-} scrVmPub_t; // TODO: verify
+} scrVmPub_t;
+
+/*
+scrVmPub_t, scrVarPub_t and scrVmGlob_t fields don't seem ordered the same way as in CoD2
+There might be a single struct for these fields
+Attempting to figure it out
+*/
+#if 0
+#define scr (*((scr_t*)(0x080e31cc)))
+typedef struct
+{
+    uint16_t timeArrayId;       // 080e31cc
+    byte gap_0x80E31CE[0x2];
+    bool bInited;               // 080e31d0
+    
+    byte gap_0x80E31D4[0x20E604];
+
+    const char *fieldBuffer;    // 082f17d8
+
+    byte gap_0x82F17DC[0x4008];
+
+    int function_count;         // 082f57e4
+    byte gap_0x82F57E8[0x98];
+    const char *error_message;  // 082f5880
+    const char *dialog_error_message;   // 082f5884
+    int error_index;            // 082f5888
+    bool terminal_error;        // 082f588c
+    int loading;                // 082f5890
+    
+
+
+} scr_t;
+#endif
 
 typedef int fileHandle_t;
 typedef void *unzFile;

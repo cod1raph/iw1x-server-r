@@ -1682,7 +1682,7 @@ void custom_SV_NextDownload_f(client_t *cl)
             Com_Printf("clientDownload: %d : file \"%s\" completed\n", clientNum, cl->downloadName);
             
             if(cl->download)
-                SV_CloseDownload(cl->download);
+                FS_FCloseFile(cl->download);
             cl->download = 0;
             *cl->downloadName = 0;
 
@@ -2171,6 +2171,16 @@ void custom_DeathmatchScoreboardMessage(gentity_t *ent)
     trap_SendServerCommand(ent - g_entities, SV_CMD_RELIABLE, va("b %i %i %i%s", visiblePlayers, level->teamScores[1], level->teamScores[2], string));
 }
 
+void custom_Scr_ErrorInternal(const char *error)
+{
+    printf("###### custom_Scr_ErrorInternal, error: %s\n", error);
+
+
+
+    
+    
+}
+
 void CrashLogger(int sig)
 {
     int fd;
@@ -2404,6 +2414,11 @@ class iw1x
         hook_jmp(0x0808bd58, (int)custom_SVC_Status);
         hook_jmp(0x08084524, (int)custom_SV_BanNum_f);
         hook_jmp(0x08086168, (int)custom_SV_NextDownload_f);
+
+
+        //hook_jmp(0x080aa158, (int)custom_Scr_ErrorInternal);
+        
+        
         
         hook_Sys_LoadDll = new cHook(0x080c5fe4, (int)custom_Sys_LoadDll);
         hook_Sys_LoadDll->hook();

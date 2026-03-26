@@ -336,6 +336,11 @@ int stackGetParamFloat(int param, float *value)
 void gsc_testfunction()
 {
     printf("##### gsc_testfunction\n");
+    
+    
+    Scr_Error("Scr_Error test");
+    
+
 }
 void gsc_testmethod(scr_entref_t ref)
 {

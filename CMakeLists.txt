@@ -19,7 +19,7 @@ set(CMAKE_SHARED_LINKER_FLAGS "-m32")
 set(CMAKE_LIBRARY_PATH "/lib32" "/usr/lib32" "/usr/lib/i386-linux-gnu" ${CMAKE_LIBRARY_PATH})
 
 # Options
-option(FILE_HANDLING "Enable stdio functions (fread, fwrite...)" OFF)
+option(FILE_HANDLING "Enable file handling functions (fread, fwrite...)" OFF)
 
 message(STATUS "${SEPARATOR}")
 message(STATUS "FILE_HANDLING: ${FILE_HANDLING}")
