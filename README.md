@@ -1,3 +1,7 @@
+> [!CAUTION]
+> 3/26/2026  
+> Calling `Scr_Error` causes crash
+
 > [!IMPORTANT]
 > 3/25/2026  
 > Deleted the `replace` gsc function, MiscMod users would have to disable it
