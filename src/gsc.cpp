@@ -1,6 +1,6 @@
 #include "gsc.hpp"
 
-scr_function_t scriptFunctions[] =
+scr_function_t customScriptFunctions[] =
 {
 #if ENABLE_FILE_HANDLING == 1
     {"file_exists", gsc_utils_file_exists, qfalse},
@@ -27,29 +27,10 @@ scr_function_t scriptFunctions[] =
     ////
 
     {"testFunction", gsc_testfunction, qfalse},
-    {NULL, NULL, 0} // Terminator
+    {NULL, NULL, 0}
 };
 
-xfunction_t Scr_GetCustomFunction(const char **fname, int *fdev)
-{
-    xfunction_t m = Scr_GetFunction(fname, fdev);
-    if(m)
-        return m;
-
-    for (int i = 0; scriptFunctions[i].name; i++)
-    {
-        if(strcasecmp(*fname, scriptFunctions[i].name))
-            continue;
-
-        scr_function_t func = scriptFunctions[i];
-        *fname = func.name;
-        *fdev = func.developer;
-        return func.call;
-    }
-    return NULL;
-}
-
-scr_method_t scriptMethods[] =
+scr_method_t customScriptMethods[] =
 {
     //// Entity
     {"showToPlayer", gsc_entity_showtoplayer, qfalse},
@@ -93,31 +74,12 @@ scr_method_t scriptMethods[] =
     ////
 
     {"testMethod", gsc_testmethod, 0},
-    {NULL, NULL, 0} // Terminator
+    {NULL, NULL, 0}
 };
-
-xmethod_t Scr_GetCustomMethod(const char **fname, qboolean *fdev)
-{
-    xmethod_t m = Scr_GetMethod(fname, fdev);
-    if(m)
-        return m;
-
-    for (int i = 0; scriptMethods[i].name; i++)
-    {
-        if(strcasecmp(*fname, scriptMethods[i].name))
-            continue;
-        
-        scr_method_t func = scriptMethods[i];
-        *fname = func.name;
-        *fdev = func.developer;
-        return func.call;
-    }
-    return NULL;
-}
 
 void stackError(const char *format, ...)
 {
-    char s[MAX_STRINGLENGTH];
+    char s[MAX_STRING_CHARS];
     int len = 0;
     va_list va;
 
@@ -129,7 +91,6 @@ void stackError(const char *format, ...)
     s[len] = '\n';
     s[len + 1] = '\0';
     Com_PrintMessage(0, s);
-    Scr_CodeCallback_Error(qfalse, qfalse, "stackError", s);
 }
 
 int stackGetParams(const char *params, ...)

@@ -96,6 +96,7 @@ PM_NoclipMove_t PM_NoclipMove;
 G_LocalizedStringIndex_t G_LocalizedStringIndex;
 trap_SetConfigstring_t trap_SetConfigstring;
 Scr_GetPointerType_t Scr_GetPointerType;
+Com_ScriptError_t Com_ScriptError;
 ////
 
 //// Callbacks
@@ -106,8 +107,6 @@ int codecallback_playerdamage = 0;
 int codecallback_playerkilled = 0;
 int codecallback_client_spam = 0;
 int codecallback_playercommand = 0;
-//int codecallback_playercrashland = 0;
-int codecallback_error = 0;
 callback_t callbacks[] =
 {
     // Stock
@@ -120,7 +119,6 @@ callback_t callbacks[] =
     // Custom
     {&codecallback_client_spam, "CodeCallback_CLSpam", true},
     {&codecallback_playercommand, "CodeCallback_PlayerCommand", true},
-    {&codecallback_error, "CodeCallback_Error", true},
 };
 ////
 
@@ -151,83 +149,6 @@ cHook *hook_SV_BeginDownload_f;
 cHook *hook_SV_SendClientGameState;
 cHook *hook_Sys_LoadDll;
 cHook *hook_BG_PlayAnim;
-
-// See https://github.com/xtnded/codextended/blob/855df4fb01d20f19091d18d46980b5fdfa95a712/src/shared.c#L632
-#define MAX_VA_STRING 32000
-char *custom_va(const char *format, ...)
-{
-    va_list argptr;
-    static char temp_buffer[MAX_VA_STRING];
-    static char string[MAX_VA_STRING];
-    static int index = 0;
-    char *buf;
-    int len;
-
-    va_start(argptr, format);
-    vsprintf(temp_buffer, format, argptr);
-    va_end(argptr);
-
-    if((len = strlen(temp_buffer)) >= MAX_VA_STRING)
-        Com_Error(ERR_DROP, "Attempted to overrun string in call to va()\n");
-
-    if(len + index >= MAX_VA_STRING - 1)
-        index = 0;
-
-    buf = &string[index];
-    memcpy(buf, temp_buffer, len + 1);
-    index += len + 1;
-    return buf;
-}
-
-qboolean FS_svrPak(const char *base)
-{
-    if(strstr(base, "_svr_"))
-        return qtrue;
-
-    if (*fs_svrPaks->string)
-    {
-        bool isSvrPak = false;
-        
-        std::string copy_fs_svrPaks(fs_svrPaks->string);
-        const char* separator = ";";
-        char* strToken = strtok((char*)copy_fs_svrPaks.c_str(), separator);
-
-        while (strToken != NULL)
-        {
-            if (!strcmp(base, strToken))
-            {
-                isSvrPak = true;
-                break;
-            }
-            strToken = strtok(NULL, separator);
-        }
-
-        if(isSvrPak)
-            return qtrue;
-    }
-
-    return qfalse;
-}
-
-bool shouldServeFile(const char *requestedFilePath)
-{
-    static char localFilePath[MAX_OSPATH*2+5];
-    searchpath_t* search;
-
-    localFilePath[0] = 0;
-
-    for (search = fs_searchpaths; search; search = search->next)
-    {
-        if (search->pak)
-        {
-            snprintf(localFilePath, sizeof(localFilePath), "%s/%s.pk3", search->pak->pakGamename, search->pak->pakBasename);
-            if(!strcmp(localFilePath, requestedFilePath))
-                if(!FS_svrPak(search->pak->pakBasename))
-                    return true;
-        }
-    }
-    return false;
-}
 
 void custom_Com_Init(char *commandLine)
 {
@@ -286,13 +207,78 @@ void custom_Com_Init(char *commandLine)
     ////
 }
 
+xfunction_t hook_Scr_GetFunction(const char **name, int *developer)
+{
+    xfunction_t function = Scr_GetFunction(name, developer);
+    if(function)
+        return function;
+
+    for (int i = 0; customScriptFunctions[i].name; i++)
+    {
+        if(strcasecmp(*name, customScriptFunctions[i].name))
+            continue;
+
+        scr_function_t function = customScriptFunctions[i];
+        *name = function.name;
+        *developer = function.developer;
+        return function.call;
+    }
+    return NULL;
+}
+
+xmethod_t hook_Scr_GetMethod(const char **name, qboolean *developer)
+{
+    xmethod_t method = Scr_GetMethod(name, developer);
+    if(method)
+        return method;
+
+    for (int i = 0; customScriptMethods[i].name; i++)
+    {
+        if(strcasecmp(*name, customScriptMethods[i].name))
+            continue;
+        
+        scr_method_t method = customScriptMethods[i];
+        *name = method.name;
+        *developer = method.developer;
+        return method.call;
+    }
+    return NULL;
+}
+
+// See https://github.com/xtnded/codextended/blob/855df4fb01d20f19091d18d46980b5fdfa95a712/src/shared.c#L632
+#define MAX_VA_STRING 32000
+char *custom_va(const char *format, ...)
+{
+    va_list argptr;
+    static char temp_buffer[MAX_VA_STRING];
+    static char string[MAX_VA_STRING];
+    static int index = 0;
+    char *buf;
+    int len;
+
+    va_start(argptr, format);
+    vsprintf(temp_buffer, format, argptr);
+    va_end(argptr);
+
+    if((len = strlen(temp_buffer)) >= MAX_VA_STRING)
+        Com_Error(ERR_DROP, "Attempted to overrun string in call to va()\n");
+
+    if(len + index >= MAX_VA_STRING - 1)
+        index = 0;
+
+    buf = &string[index];
+    memcpy(buf, temp_buffer, len + 1);
+    index += len + 1;
+    return buf;
+}
+
 // See https://github.com/xtnded/codextended/blob/855df4fb01d20f19091d18d46980b5fdfa95a712/src/script.c#L944
 static int localizedStringIndex = 128;
 int custom_G_LocalizedStringIndex(const char *string)
 {
     int i;
     int start = 1244;
-    char s[MAX_STRINGLENGTH];
+    char s[MAX_STRING_CHARS];
 
     if(localizedStringIndex >= 256)
         localizedStringIndex = 128;
@@ -339,6 +325,36 @@ void custom_GScr_LoadGameTypeScript()
                     *callbacks[i].pos = Scr_GetFunctionHandle(fs_callbacks_additional->string, callbacks[i].name);
         }
     }
+}
+
+qboolean FS_svrPak(const char *base)
+{
+    if(strstr(base, "_svr_"))
+        return qtrue;
+
+    if (*fs_svrPaks->string)
+    {
+        bool isSvrPak = false;
+        
+        std::string copy_fs_svrPaks(fs_svrPaks->string);
+        const char* separator = ";";
+        char* strToken = strtok((char*)copy_fs_svrPaks.c_str(), separator);
+
+        while (strToken != NULL)
+        {
+            if (!strcmp(base, strToken))
+            {
+                isSvrPak = true;
+                break;
+            }
+            strToken = strtok(NULL, separator);
+        }
+
+        if(isSvrPak)
+            return qtrue;
+    }
+
+    return qfalse;
 }
 
 const char* custom_FS_ReferencedPakNames(void)
@@ -391,7 +407,7 @@ void custom_SV_PacketEvent(netadr_t from, msg_t *msg)
     client_t *cl;
     int i;
     
-    int *unknown_var = (int*)0x080e30cc; // Maybe related to scrVmGlob.loading
+    int *unknown_var = (int*)0x080e30cc;
     
     if (msg->cursize < 4 || *(int *)msg->data != -1)
     {
@@ -455,7 +471,7 @@ void custom_SV_PacketEvent(netadr_t from, msg_t *msg)
         }
 
         NET_OutOfBandPrint(NS_SERVER, from, "disconnect");
-        unknown_var = 0;
+        *unknown_var = 0;
         Hunk_ClearTempMemoryInternal();
     }
     else
@@ -833,7 +849,7 @@ static void custom_SV_BanNum_f(void)
 // See https://github.com/voron00/CoD2rev_Server/blob/b012c4b45a25f7f80dc3f9044fe9ead6463cb5c6/src/server/sv_client_mp.cpp#L1685
 void SV_AuthorizeRequest(netadr_t from, int challenge)
 {
-    char gameDir[MAX_STRINGLENGTH];
+    char gameDir[MAX_STRING_CHARS];
 
     if(svs.authorizeAddress.type == NA_BAD)
         return;
@@ -1024,7 +1040,6 @@ void hook_SV_AuthorizeIpPacket(netadr_t from)
                 memset(&svs.challenges[i], 0, sizeof(svs.challenges[i]));
                 return;
             }
-            
             break;
         }
     }
@@ -1221,7 +1236,7 @@ void custom_SVC_RemoteCommand(netadr_t from, msg_t *msg)
     else
     {
         len = 0;
-        max_len = MAX_STRINGLENGTH;
+        max_len = MAX_STRING_CHARS;
         arg = 2;
         while (argc = Cmd_Argc(), arg < argc)
         {
@@ -1348,41 +1363,6 @@ void custom_SV_SendClientGameState(client_t *client)
     SV_SendMessageToClient(&msg, client);
 }
 
-scr_error_t scr_errors[MAX_ERROR_BUFFER];
-int scr_errors_index = 0;
-void Scr_CodeCallback_Error(qboolean terminal, qboolean emit, const char *internal_function, char *message)
-{
-    if (codecallback_error && Scr_IsSystemActive() && !com_errorEntered)
-    {
-        if (!strncmp(message, "exceeded maximum number of script variables", 43))
-        {
-            Com_Error(ERR_DROP, "\x15%s", "exceeded maximum number of script variables");
-        }
-
-        if (terminal || emit)
-        {
-            Scr_AddString(message);
-            Scr_AddString(internal_function);
-            Scr_AddInt(terminal);
-            short ret = Scr_ExecThread(codecallback_error, 3);
-            Scr_FreeThread(ret);
-        }
-        else
-        {
-            if (scr_errors_index < MAX_ERROR_BUFFER)
-            {
-                strncpy(scr_errors[scr_errors_index].internal_function, internal_function, sizeof(scr_errors[scr_errors_index].internal_function));
-                strncpy(scr_errors[scr_errors_index].message, message, sizeof(scr_errors[scr_errors_index].message));
-                scr_errors_index++;
-            }
-            else
-            {
-                printf("WARNING: Errors buffer full, not calling CodeCallback_Error for '%s'\n", message);
-            }
-        }
-    }
-}
-
 int custom_MSG_ReadBitsCompress(const byte* input, byte* outputBuf, int readsize, int outputBufSize)
 {
     readsize = readsize * 8;
@@ -1496,6 +1476,25 @@ void custom_SV_ExecuteClientCommand(client_t *cl, const char *s, qboolean client
             VM_Call(gvm, GAME_CLIENT_COMMAND, cl - svs.clients);
 }
 
+bool shouldServeFile(const char *requestedFilePath)
+{
+    static char localFilePath[MAX_OSPATH*2+5];
+    searchpath_t* search;
+
+    localFilePath[0] = 0;
+
+    for (search = fs_searchpaths; search; search = search->next)
+    {
+        if (search->pak)
+        {
+            snprintf(localFilePath, sizeof(localFilePath), "%s/%s.pk3", search->pak->pakGamename, search->pak->pakBasename);
+            if(!strcmp(localFilePath, requestedFilePath))
+                if(!FS_svrPak(search->pak->pakBasename))
+                    return true;
+        }
+    }
+    return false;
+}
 void custom_SV_BeginDownload_f(client_t *cl)
 {
     //// [exploit patch] q3dirtrav
@@ -1542,7 +1541,7 @@ void custom_SV_WriteDownloadToClient(client_t *cl, msg_t *msg)
     int curindex;
     int blksize;
     char downloadNameNoExt[MAX_QPATH];
-    char errorMessage[MAX_STRINGLENGTH];
+    char errorMessage[MAX_STRING_CHARS];
 
     if(!*cl->downloadName)
         return;
@@ -1922,7 +1921,7 @@ qboolean custom_SV_ClientCommand(client_t *cl, msg_t *msg)
 
     SV_ExecuteClientCommand(cl, s, clientOk);
     cl->lastClientCommand = seq;
-    Com_sprintf(cl->lastClientCommandString, MAX_STRINGLENGTH, "%s", s);
+    Com_sprintf(cl->lastClientCommandString, MAX_STRING_CHARS, "%s", s);
 
     return qtrue;
 }
@@ -1939,7 +1938,7 @@ void hook_ClientCommand(int clientNum)
         return;
 
     // [glitch patch] follow while alive
-    if(!strcmp(cmd, "follownext") || !strcmp(cmd, "followprev")) // Not checking if alive, client doesn't call these commands when clicking as spectator
+    if(!strcmp(cmd, "follownext") || !strcmp(cmd, "followprev"))
         return;
 
     if (!codecallback_playercommand)
@@ -1952,7 +1951,7 @@ void hook_ClientCommand(int clientNum)
     int args = Cmd_Argc();
     for (int i = 0; i < args; i++)
     {
-        char tmp[MAX_STRINGLENGTH];
+        char tmp[MAX_STRING_CHARS];
         trap_Argv(i, tmp, sizeof(tmp));
         if (i == 1 && tmp[0] >= 20 && tmp[0] <= 22)
         {
@@ -1975,7 +1974,6 @@ void hook_ClientCommand(int clientNum)
     Scr_FreeThread(ret);
 }
 
-//// 1.1 deadchat support
 // See https://github.com/xtnded/codextended/blob/855df4fb01d20f19091d18d46980b5fdfa95a712/src/sv_client.c#L940
 void hook_G_Say(gentity_s *ent, gentity_s *target, int mode, const char *chatText)
 {
@@ -1985,7 +1983,6 @@ void hook_G_Say(gentity_s *ent, gentity_s *target, int mode, const char *chatTex
 
     G_Say(ent, NULL, mode, chatText);
 }
-////
 
 void custom_ClientEndFrame(gentity_t *ent)
 {
@@ -2171,15 +2168,48 @@ void custom_DeathmatchScoreboardMessage(gentity_t *ent)
     trap_SendServerCommand(ent - g_entities, SV_CMD_RELIABLE, va("b %i %i %i%s", visiblePlayers, level->teamScores[1], level->teamScores[2], string));
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+Attempting to fix Scr_Error crash
+*/
 void custom_Scr_ErrorInternal(const char *error)
 {
     printf("###### custom_Scr_ErrorInternal, error: %s\n", error);
-
-
-
     
+    char **scrVarPub_error_message = (char**)0x082f5880;
+    *scrVarPub_error_message = (char*)error;
     
+    int *scrVmPub_function_count = (int*)0x082f57e4;
+    if (*scrVmPub_function_count != 0)
+    {
+        Com_ScriptError(*scrVarPub_error_message);
+        return;
+    }
+    Com_Error(ERR_DROP, "%s", *scrVarPub_error_message);
 }
+
+
 
 void CrashLogger(int sig)
 {
@@ -2313,6 +2343,7 @@ void *custom_Sys_LoadDll(const char *name, char *fqpath, int (**entryPoint)(int,
     trap_SetConfigstring = (trap_SetConfigstring_t)dlsym(libHandle, "trap_SetConfigstring");
     Scr_GetPointerType = (Scr_GetPointerType_t)dlsym(libHandle, "Scr_GetPointerType");
     G_AddPredictableEvent = (G_AddPredictableEvent_t)dlsym(libHandle, "G_AddPredictableEvent");
+    Com_ScriptError = (Com_ScriptError_t)dlsym(libHandle, "Com_ScriptError");
     ////
 
     //// [exploit patch] codmsgboom
@@ -2389,8 +2420,8 @@ class iw1x
         *(byte*)0x807f459 = 1;
         
         hook_call(0x08085213, (int)hook_AuthorizeState);
-        hook_call(0x08094c54, (int)Scr_GetCustomFunction);
-        hook_call(0x080951c4, (int)Scr_GetCustomMethod);
+        hook_call(0x08094c54, (int)hook_Scr_GetFunction);
+        hook_call(0x080951c4, (int)hook_Scr_GetMethod);
         hook_call(0x0808c7b8, (int)hook_SV_DirectConnect);
         hook_call(0x0808c7ea, (int)hook_SV_AuthorizeIpPacket);
         hook_call(0x0808c74e, (int)hook_SVC_Info);
@@ -2417,6 +2448,8 @@ class iw1x
 
 
         //hook_jmp(0x080aa158, (int)custom_Scr_ErrorInternal);
+        //hook_nop(0x080c9392, 2);
+        
         
         
         

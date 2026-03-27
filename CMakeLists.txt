@@ -8,18 +8,17 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(SEPARATOR "---------------------")
 
 # -m32:     32-bit
-# -fpic:    Position-independent code
 # -Wall:    Enable all warnings
 # -fvisibility=hidden: Hide symbols
 # -g:       Include debug info
 # -ggdb:    Debug info for gdb
 
-set(CMAKE_CXX_FLAGS "-m32 -fpic -Wall -fvisibility=hidden -g -ggdb")
+set(CMAKE_CXX_FLAGS "-m32 -Wall -fvisibility=hidden -g -ggdb")
 set(CMAKE_SHARED_LINKER_FLAGS "-m32")
 set(CMAKE_LIBRARY_PATH "/lib32" "/usr/lib32" "/usr/lib/i386-linux-gnu" ${CMAKE_LIBRARY_PATH})
 
 # Options
-option(FILE_HANDLING "Enable file handling functions (fread, fwrite...)" OFF)
+option(FILE_HANDLING "Enable file handling GSC functions (fread, fwrite...)" OFF)
 
 message(STATUS "${SEPARATOR}")
 message(STATUS "FILE_HANDLING: ${FILE_HANDLING}")

@@ -494,9 +494,9 @@ void Scr_SetFogForPlayer(float start, float density, float heightDensity, float 
         Scr_Error(va("%s: transition time must be >= 0 seconds", cmdName));
 
     client_t *client = &svs.clients[clientNum];
-    char configstring[MAX_STRINGLENGTH];
+    char configstring[MAX_STRING_CHARS];
 
-    Com_sprintf(configstring, MAX_STRINGLENGTH, "d %i %s", CS_FOGVARS, va("%g %g %g %g %g %g %.0f", start, density, heightDensity, r, g, b, (float)(time * 1000.0)));
+    Com_sprintf(configstring, MAX_STRING_CHARS, "d %i %s", CS_FOGVARS, va("%g %g %g %g %g %g %.0f", start, density, heightDensity, r, g, b, (float)(time * 1000.0)));
     SV_SendServerCommand(client, SV_CMD_RELIABLE, configstring);
 }
 void gsc_player_setexpfogforplayer(scr_entref_t ref)
@@ -671,9 +671,9 @@ void gsc_player_setconfigstringforplayer(scr_entref_t ref)
     }
 
     client_t *client = &svs.clients[id];
-    char cmd[MAX_STRINGLENGTH];
+    char cmd[MAX_STRING_CHARS];
 
-    Com_sprintf(cmd, MAX_STRINGLENGTH, "d %i %s", index, value);
+    Com_sprintf(cmd, MAX_STRING_CHARS, "d %i %s", index, value);
     SV_SendServerCommand(client, SV_CMD_RELIABLE, cmd);
 
     Scr_AddBool(qtrue);

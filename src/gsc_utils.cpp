@@ -58,7 +58,7 @@ void gsc_utils_tolower()
 {
     size_t i;
     int c;
-    char tempString[MAX_STRINGLENGTH];
+    char tempString[MAX_STRING_CHARS];
     const char *string;
 
     if (!stackGetParams("s", &string))
@@ -89,7 +89,7 @@ void gsc_utils_strtok()
     size_t i, source;
     size_t dest = 0;
     int c;
-    char tempString[MAX_STRINGLENGTH];
+    char tempString[MAX_STRING_CHARS];
 
     const char *s = Scr_GetString(0);
     const char *delim = Scr_GetString(1);
@@ -315,7 +315,7 @@ void gsc_utils_getsubstr()
 {
     size_t i;
     int c;
-    char tempString[MAX_STRINGLENGTH];
+    char tempString[MAX_STRING_CHARS];
 
     const char *s = Scr_GetString(0);
 

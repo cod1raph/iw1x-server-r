@@ -42,7 +42,7 @@
 #define MAX_QPATH                   64
 #define	MAX_NAME_LENGTH             32
 #define MAX_RELIABLE_COMMANDS       64
-#define MAX_STRINGLENGTH            1024
+#define MAX_STRING_CHARS            1024
 #define MAX_MASTER_SERVERS          5
 #define MAX_WEAPONS                 64
 #define MAX_OBJECTIVES              16
@@ -601,7 +601,7 @@ typedef struct
 
 typedef struct
 {
-    char command[MAX_STRINGLENGTH];
+    char command[MAX_STRING_CHARS];
     int cmdTime;
     int cmdType;
 } reliableCommands_t;
@@ -850,7 +850,7 @@ typedef struct client_s
     int challenge;
     usercmd_t lastUsercmd;
     int lastClientCommand;
-    char lastClientCommandString[MAX_STRINGLENGTH];
+    char lastClientCommandString[MAX_STRING_CHARS];
     gentity_t *gentity;
     char name[MAX_NAME_LENGTH];
     char downloadName[MAX_QPATH];   // 0x10a64
@@ -1118,7 +1118,6 @@ static_assert((sizeof(animation_t) == 92), "ERROR: animation_t size is invalid!"
 //// Custom
 
 #define BAN_LIST_NAME "ban.txt"
-#define MAX_ERROR_BUFFER 64
 
 typedef struct leakyBucket_s leakyBucket_t;
 struct leakyBucket_s
@@ -1137,12 +1136,6 @@ typedef struct callback_s
     const char *name;
     bool custom;
 } callback_t;
-
-typedef struct src_error_s
-{
-    char internal_function[64];
-    char message[1024];
-} scr_error_t;
 
 typedef struct customPlayerState_s
 {

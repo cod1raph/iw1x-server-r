@@ -29,7 +29,6 @@ typedef void (*ClientCommand_t)(int clientNum);
 extern ClientCommand_t ClientCommand;
 
 typedef qboolean (*StuckInClient_t)(gentity_s *self);
-extern StuckInClient_t StuckInClient;
 
 //// BG
 typedef int (*BG_GetNumWeapons_t)(void);
@@ -42,7 +41,6 @@ typedef int (*BG_GetWeaponIndexForName_t)(const char *name);
 extern BG_GetWeaponIndexForName_t BG_GetWeaponIndexForName;
 
 typedef int (*BG_PlayAnim_t)(playerState_t *ps, int animNum, int bodyPart, int forceDuration, qboolean setTimer, qboolean isContinue, qboolean force);
-extern BG_PlayAnim_t BG_PlayAnim;
 ////
 
 //// Cmd
@@ -85,7 +83,6 @@ typedef char* (*Com_Parse_t)(const char **data_p);
 static const Com_Parse_t Com_Parse = (Com_Parse_t)0x08081d1c;
 
 typedef void (*Com_SkipRestOfLine_t)(const char **data);
-extern Com_SkipRestOfLine_t Com_SkipRestOfLine;
 
 typedef int (*Com_Milliseconds_t)(void);
 static const Com_Milliseconds_t Com_Milliseconds = (Com_Milliseconds_t)0x0806d988;
@@ -98,6 +95,8 @@ static const Com_AddToString_t Com_AddToString = (Com_AddToString_t)0x0806dbd4;
 
 typedef void (*Com_EndRedirect_t)(void);
 static const Com_EndRedirect_t Com_EndRedirect = (Com_EndRedirect_t)0x0806d8d0;
+
+typedef void (*Com_ScriptError_t)(const char *msg, ...);
 ////
 
 //// Cvar
@@ -157,10 +156,8 @@ static const FS_Printf_t FS_Printf = (FS_Printf_t)0x0805e3b0;
 
 //// G
 typedef void (*G_Say_t)(gentity_s *ent, gentity_s *target, int mode, const char *chatText);
-extern G_Say_t G_Say;
 
 typedef int (*G_LocalizedStringIndex_t)(const char *string);
-extern G_LocalizedStringIndex_t G_LocalizedStringIndex;
 
 typedef void (*G_AddLean_t)(gentity_t *ent, vec3_t origin);
 extern G_AddLean_t G_AddLean;
@@ -292,7 +289,6 @@ extern Q_strupr_t Q_strupr;
 typedef void (*Q_strcat_t)(char *dest, int size, const char *src);
 
 typedef void (*Q_strncpyz_t)(char *dest, const char *src, int destsize);
-extern Q_strncpyz_t Q_strncpyz;
 
 typedef void (*Q_CleanStr_t)(char *string);
 
@@ -312,16 +308,12 @@ typedef void (*Scr_Error_t)(const char *error);
 extern Scr_Error_t Scr_Error;
 
 typedef short (*Scr_ExecThread_t)(int callbackHook, unsigned int numArgs);
-extern Scr_ExecThread_t Scr_ExecThread;
 
 typedef short (*Scr_ExecEntThread_t)(gentity_t* ent, int callbackHook, unsigned int numArgs);
-extern Scr_ExecEntThread_t Scr_ExecEntThread;
 
 typedef unsigned short (*Scr_ExecEntThreadNum_t)(int entnum, unsigned int classnum, int handle, unsigned int paramcount);
-extern Scr_ExecEntThreadNum_t Scr_ExecEntThreadNum;
 
 typedef short (*Scr_FreeThread_t)(short thread_id);
-extern Scr_FreeThread_t Scr_FreeThread;
 
 typedef int (*Scr_GetFunctionHandle_t)(const char* scriptName, const char* labelName);
 
@@ -329,7 +321,6 @@ typedef int (*Scr_GetNumParam_t)(void);
 extern Scr_GetNumParam_t Scr_GetNumParam;
 
 typedef int (*Scr_IsSystemActive_t)();
-extern Scr_IsSystemActive_t Scr_IsSystemActive;
 
 typedef int (*Scr_GetInt_t)(unsigned int param);
 extern Scr_GetInt_t Scr_GetInt;
@@ -376,16 +367,12 @@ extern Scr_AddObject_t Scr_AddObject;
 typedef unsigned int (*Scr_LoadScript_t)(const char *filename);
 
 typedef void (*Scr_ObjectError_t)(const char *error);
-extern Scr_ObjectError_t Scr_ObjectError;
 
 typedef unsigned short (*Scr_GetConstString_t)(unsigned int param);
-extern Scr_GetConstString_t Scr_GetConstString;
 
 typedef void (*Scr_ParamError_t)(int paramNum, const char *error);
-extern Scr_ParamError_t Scr_ParamError;
 
 typedef int (*Scr_GetPointerType_t)(unsigned int param);
-extern Scr_GetPointerType_t Scr_GetPointerType;
 ////
 
 //// SV
@@ -537,10 +524,8 @@ typedef const char* (*trap_GetConfigstringConst_t)(int index);
 extern trap_GetConfigstringConst_t trap_GetConfigstringConst;
 
 typedef void (*trap_GetConfigstring_t)(int index, char *buffer, int bufferSize);
-extern trap_GetConfigstring_t trap_GetConfigstring;
 
 typedef void (*trap_SetConfigstring_t)(int index, const char *val);
-extern trap_SetConfigstring_t trap_SetConfigstring;
 ////
 
 //// Z
