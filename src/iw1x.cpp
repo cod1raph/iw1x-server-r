@@ -1,6 +1,4 @@
-#include "shared.hpp"
-
-#include "hook.hpp"
+#include "iw1x.hpp"
 
 //// Cvars
 cvar_t *com_dedicated;
@@ -97,6 +95,7 @@ G_LocalizedStringIndex_t G_LocalizedStringIndex;
 trap_SetConfigstring_t trap_SetConfigstring;
 Scr_GetPointerType_t Scr_GetPointerType;
 Com_ScriptError_t Com_ScriptError;
+PM_BeginWeaponChange_t PM_BeginWeaponChange;
 ////
 
 //// Callbacks
@@ -122,23 +121,11 @@ callback_t callbacks[] =
 };
 ////
 
-// See https://github.com/xtnded/codextended/blob/855df4fb01d20f19091d18d46980b5fdfa95a712/src/sv_client.c#L98
-static ucmd_t ucmds[] =
-{
-    {"userinfo",        SV_UpdateUserinfo_f,     },
-    {"disconnect",      SV_Disconnect_f,         },
-    {"cp",              SV_VerifyPaks_f,         },
-    {"vdr",             SV_ResetPureClient_f,    },
-    {"download",        SV_BeginDownload_f,      },
-    {"nextdl",          SV_NextDownload_f,       },
-    {"stopdl",          SV_StopDownload_f,       },
-    {"donedl",          SV_DoneDownload_f,       },
-    {"retransdl",       SV_RetransmitDownload_f, },
-    {NULL, NULL}
-};
-
 customPlayerState_t customPlayerState[MAX_CLIENTS];
 customChallenge_t customChallenge[MAX_CHALLENGES];
+
+// See https://github.com/ibuddieat/zk_libcod/blob/526bebb15685edb227df738bbdf9581ef30a56f0/code/libcod.cpp#L374
+bool playerCommand = false;
 
 cHook *hook_ClientEndFrame;
 cHook *hook_Com_Init;
@@ -1454,28 +1441,6 @@ void custom_SV_ExecuteClientMessage(client_t *cl, msg_t *msg)
     }
 }
 
-// See https://github.com/voron00/CoD2rev_Server/blob/b012c4b45a25f7f80dc3f9044fe9ead6463cb5c6/src/server/sv_client_mp.cpp#L2128
-void custom_SV_ExecuteClientCommand(client_t *cl, const char *s, qboolean clientOK)
-{
-    ucmd_t *u;
-
-    ((void(*)(int))0x080bfea0)(1); // Unknown function, seems related to scrAnimGlob
-    Cmd_TokenizeString(s);
-
-    for (u = ucmds; u->name; u++)
-    {
-        if (!strcmp(Cmd_Argv(0), u->name))
-        {
-            u->func(cl);
-            break;
-        }
-    }
-
-    if(clientOK)
-        if(!u->name && sv.state == SS_GAME)
-            VM_Call(gvm, GAME_CLIENT_COMMAND, cl - svs.clients);
-}
-
 bool shouldServeFile(const char *requestedFilePath)
 {
     static char localFilePath[MAX_OSPATH*2+5];
@@ -1926,9 +1891,36 @@ qboolean custom_SV_ClientCommand(client_t *cl, msg_t *msg)
     return qtrue;
 }
 
+void Cmd_Swap_f(gentity_t *ent)
+{
+    playerState_t *ps = &ent->client->ps;
+    
+    unsigned int primary = ps->weaponslots[SLOT_PRIMARY];
+    unsigned int primaryB = ps->weaponslots[SLOT_PRIMARYB];
+
+    if (primary != WP_NONE && primaryB != WP_NONE)
+    {
+        ps->weaponslots[SLOT_PRIMARY]  = primaryB;
+        ps->weaponslots[SLOT_PRIMARYB] = primary;
+    }
+    else
+    {
+        std::string message = "e \"";
+        message += "2 primary weapons required.";
+        message += "\"";
+        trap_SendServerCommand(ent - g_entities, SV_CMD_CAN_IGNORE, message.c_str());
+    }
+}
+
 void hook_ClientCommand(int clientNum)
 {
+    gentity_t *ent;
+
     if(!Scr_IsSystemActive())
+        return;
+
+    ent = &g_entities[clientNum];
+	if(!ent->client)
         return;
 
     char* cmd = Cmd_Argv(0);
@@ -1940,6 +1932,12 @@ void hook_ClientCommand(int clientNum)
     // [glitch patch] follow while alive
     if(!strcmp(cmd, "follownext") || !strcmp(cmd, "followprev"))
         return;
+    
+    if (!strcmp(cmd, "swap"))
+    {
+        Cmd_Swap_f(ent);
+        return;
+    }
 
     if (!codecallback_playercommand)
     {
@@ -1970,8 +1968,10 @@ void hook_ClientCommand(int clientNum)
         }
     }
     
-    short ret = Scr_ExecEntThread(&g_entities[clientNum], codecallback_playercommand, 1);
+    playerCommand = true;
+    short ret = Scr_ExecEntThread(ent, codecallback_playercommand, 1);
     Scr_FreeThread(ret);
+    playerCommand = false;
 }
 
 // See https://github.com/xtnded/codextended/blob/855df4fb01d20f19091d18d46980b5fdfa95a712/src/sv_client.c#L940
@@ -2344,6 +2344,7 @@ void *custom_Sys_LoadDll(const char *name, char *fqpath, int (**entryPoint)(int,
     Scr_GetPointerType = (Scr_GetPointerType_t)dlsym(libHandle, "Scr_GetPointerType");
     G_AddPredictableEvent = (G_AddPredictableEvent_t)dlsym(libHandle, "G_AddPredictableEvent");
     Com_ScriptError = (Com_ScriptError_t)dlsym(libHandle, "Com_ScriptError");
+    PM_BeginWeaponChange = (PM_BeginWeaponChange_t)((int)dlsym(libHandle, "_init") + 0x105F8);
     ////
 
     //// [exploit patch] codmsgboom
@@ -2431,7 +2432,6 @@ class iw1x
         hook_jmp(0x080717a4, (int)custom_FS_ReferencedPakChecksums);
         hook_jmp(0x080716cc, (int)custom_FS_ReferencedPakNames);
         hook_jmp(0x080872ec, (int)custom_SV_ExecuteClientMessage);
-        hook_jmp(0x08086d58, (int)custom_SV_ExecuteClientCommand);
         hook_jmp(0x0809045c, (int)custom_SV_SendClientMessages);
         hook_jmp(0x08086290, (int)custom_SV_WriteDownloadToClient);
         hook_jmp(0x0808f680, (int)custom_SV_SendMessageToClient);

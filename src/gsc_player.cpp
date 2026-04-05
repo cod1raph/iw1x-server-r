@@ -349,7 +349,16 @@ void gsc_player_processclientcommand(scr_entref_t ref)
         return;
     }
 
+    if (!playerCommand)
+	{
+		stackError("gsc_player_processclientcommand() must be called from CodeCallback_PlayerCommand, without delay, and at most once per player command");
+		Scr_AddUndefined();
+		return;
+	}
+
     ClientCommand(id);
+
+    playerCommand = false;
 
     Scr_AddBool(qtrue);
 }

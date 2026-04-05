@@ -279,6 +279,8 @@ static const NET_CompareAdr_t NET_CompareAdr = (NET_CompareAdr_t)0x08080dec;
 
 //// PM
 typedef void (*PM_NoclipMove_t)();
+
+typedef void (*PM_BeginWeaponChange_t)(playerState_t *ps, int newweapon);
 ////
 
 //// Q

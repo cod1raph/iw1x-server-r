@@ -25,6 +25,7 @@
 #define SVF_SINGLECLIENT 0x800
 #define ANIM_BITS 10
 #define ANIM_TOGGLEBIT (1 << ( ANIM_BITS - 1))
+#define WP_NONE 0
 
 #define MAX_BPS_WINDOW              20
 #define MAX_CHALLENGES              1024
@@ -345,6 +346,14 @@ enum var_type_t
     VAR_OBJECT = 7,
     VAR_FUNCTION = 9
     //...
+};
+
+enum weapSlot_t
+{
+	SLOT_NONE = 0x0,
+	SLOT_PRIMARY = 0x1,
+	SLOT_PRIMARYB = 0x2,
+	SLOT_COUNT = 0x3
 };
 
 typedef void (*xcommand_t)(void);
@@ -881,12 +890,6 @@ typedef struct client_s
     int bIsTestClient;
     int serverId;
 } client_t;
-
-typedef struct
-{
-    const char *name;
-    void (*func)(client_t *cl);
-} ucmd_t;
 
 typedef struct
 {
