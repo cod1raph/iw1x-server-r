@@ -10,6 +10,19 @@ scr_function_t customScriptFunctions[] =
     {"fclose", gsc_utils_fclose, qfalse},
 #endif
 
+#if SQLITE == 1
+	{"sqlite_open", gsc_sqlite_open, qfalse},
+	{"sqlite_query", gsc_sqlite_query, qfalse},
+	{"sqlite_close", gsc_sqlite_close, qfalse},
+	{"sqlite_escape_string", gsc_sqlite_escape_string, qfalse},
+	{"sqlite_databases_count", gsc_sqlite_databases_count, qfalse},
+	{"sqlite_tasks_count", gsc_sqlite_tasks_count, qfalse},
+	{"async_sqlite_initialize", gsc_async_sqlite_initialize, qfalse},
+	{"async_sqlite_create_query", gsc_async_sqlite_create_query, qfalse},
+	{"async_sqlite_create_query_nosave", gsc_async_sqlite_create_query_nosave, qfalse},
+	{"async_sqlite_checkdone", gsc_async_sqlite_checkdone, qfalse},
+#endif
+
     {"sendCommandToClient", gsc_utils_sendcommandtoclient, qfalse},
     {"logPrintConsole", gsc_utils_logprintconsole, qfalse},
     {"makeLocalizedString", gsc_utils_makelocalizedstring, qfalse},
@@ -72,6 +85,11 @@ scr_method_t customScriptMethods[] =
     {"processClientCommand", gsc_player_processclientcommand, qfalse},
     {"connectionlessPacketToClient", gsc_player_connectionlesspackettoclient, qfalse},
     ////
+
+#if SQLITE == 1
+	{"async_sqlite_create_entity_query", gsc_async_sqlite_create_entity_query, qfalse},
+	{"async_sqlite_create_entity_query_nosave", gsc_async_sqlite_create_entity_query_nosave, qfalse},
+#endif
 
     {"testMethod", gsc_testmethod, 0},
     {NULL, NULL, 0}
@@ -142,7 +160,7 @@ int stackGetParams(const char *params, ...)
 
         case 's':
         {
-            char **tmp = va_arg(args, char **);
+            const char **tmp = va_arg(args, const char **);
             if (!stackGetParamString(i, tmp))
             {
                 Com_DPrintf("\nstackGetParams() Param %i is not a string\n", i);
@@ -206,7 +224,7 @@ int stackGetParamInt(int param, int *value)
     return 1;
 }
 
-int stackGetParamString(int param, char **value)
+int stackGetParamString(int param, const char **value)
 {
     if(param >= Scr_GetNumParam())
         return 0;
@@ -288,6 +306,42 @@ int stackGetParamFloat(int param, float *value)
         return 0;
 
     *value = var->u.floatValue;
+
+    return 1;
+}
+
+int stackGetParamObject(int param, unsigned int *value)
+{
+    printf("####### stackGetParamObject\n");
+
+    if(param >= Scr_GetNumParam())
+        return 0;
+
+    VariableValue *var;
+    var = &scrVmPub.top[-param];
+
+    if(var->type != VAR_OBJECT)
+        return 0;
+
+    *value = var->u.pointerValue;
+
+    return 1;
+}
+
+int stackGetParamFunction(int param, int *value)
+{
+    printf("####### stackGetParamFunction\n");
+
+    if(param >= Scr_GetNumParam())
+        return 0;
+
+    VariableValue *var;
+    var = &scrVmPub.top[-param];
+
+    if(var->type != VAR_FUNCTION)
+        return 0;
+
+    *value = var->u.codePosValue - scr.programBuffer;
 
     return 1;
 }

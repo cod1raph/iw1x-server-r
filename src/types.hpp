@@ -214,7 +214,9 @@ typedef enum
 
 typedef enum
 {
+    GAME_CLIENT_CONNECT = 2,
     GAME_CLIENT_COMMAND = 6,
+    GAME_SAVEPERSIST_GET = 0x10,
     GAME_CLIENT_SCORE_GET = 0x14
 } gameExport_t;
 
@@ -315,24 +317,24 @@ typedef enum
 
 enum weapAnimNumber_t
 {
-	WEAP_IDLE = 0x0,
-	WEAP_FORCE_IDLE = 0x1,
-	WEAP_ATTACK = 0x2,
-	WEAP_ATTACK_LASTSHOT = 0x3,
-	WEAP_RECHAMBER = 0x4,
-	WEAP_ADS_ATTACK = 0x5,
-	WEAP_ADS_ATTACK_LASTSHOT = 0x6,
-	WEAP_ADS_RECHAMBER = 0x7,
-	WEAP_MELEE_ATTACK = 0x8,
-	WEAP_DROP = 0x9,
-	WEAP_RAISE = 0xA,
-	WEAP_RELOAD = 0xB,
-	WEAP_RELOAD_EMPTY = 0xC,
-	WEAP_RELOAD_START = 0xD,
-	WEAP_RELOAD_END = 0xE,
-	WEAP_ALTSWITCHFROM = 0xF,
-	WEAP_ALTSWITCHTO = 0x10,
-	MAX_WP_ANIMATIONS = 0x11,
+    WEAP_IDLE = 0x0,
+    WEAP_FORCE_IDLE = 0x1,
+    WEAP_ATTACK = 0x2,
+    WEAP_ATTACK_LASTSHOT = 0x3,
+    WEAP_RECHAMBER = 0x4,
+    WEAP_ADS_ATTACK = 0x5,
+    WEAP_ADS_ATTACK_LASTSHOT = 0x6,
+    WEAP_ADS_RECHAMBER = 0x7,
+    WEAP_MELEE_ATTACK = 0x8,
+    WEAP_DROP = 0x9,
+    WEAP_RAISE = 0xA,
+    WEAP_RELOAD = 0xB,
+    WEAP_RELOAD_EMPTY = 0xC,
+    WEAP_RELOAD_START = 0xD,
+    WEAP_RELOAD_END = 0xE,
+    WEAP_ALTSWITCHFROM = 0xF,
+    WEAP_ALTSWITCHTO = 0x10,
+    MAX_WP_ANIMATIONS = 0x11,
 }; // TODO: verify
 
 enum var_type_t
@@ -350,10 +352,10 @@ enum var_type_t
 
 enum weapSlot_t
 {
-	SLOT_NONE = 0x0,
-	SLOT_PRIMARY = 0x1,
-	SLOT_PRIMARYB = 0x2,
-	SLOT_COUNT = 0x3
+    SLOT_NONE = 0x0,
+    SLOT_PRIMARY = 0x1,
+    SLOT_PRIMARYB = 0x2,
+    SLOT_COUNT = 0x3
 };
 
 typedef void (*xcommand_t)(void);
@@ -394,17 +396,17 @@ typedef vec_t vec3_t[3];
 
 typedef struct cvar_s
 {
-    char *name;
-    char *string;
-    char *resetString;
-    char *latchedString;
-    int flags;
-    qboolean modified;
-    int modificationCount;
-    float value;
-    int integer;
-    struct cvar_s *next;
-    struct cvar_s *hashNext;
+    char *name;             // 0x0
+    char *string;           // 0x4
+    char *resetString;      // 0x8
+    char *latchedString;    // 0xC
+    int flags;              // 0x10
+    qboolean modified;      // 0x14
+    int modificationCount;  // 0x18
+    float value;            // 0x1C
+    int integer;            // 0x20
+    struct cvar_s *next;    // 0x24
+    struct cvar_s *hashNext;    // 0x28
 } cvar_t;
 
 typedef int cvarHandle_t;
@@ -424,6 +426,8 @@ union VariableUnion
     float floatValue;
     unsigned int stringValue;
     const float *vectorValue;
+    const char *codePosValue;
+    unsigned int pointerValue;
     //...
 };
 
@@ -447,25 +451,30 @@ typedef struct
     //...
 } scrVmPub_t;
 
+
+
 /*
 scrVmPub_t, scrVarPub_t and scrVmGlob_t fields don't seem ordered the same way as in CoD2
 There might be a single struct for these fields
 Attempting to figure it out
 */
-#if 0
-#define scr (*((scr_t*)(0x080e31cc)))
+#if 1
+#define scr (*((scr_t*)(0x080e3124)))
 typedef struct
 {
+    const char *programBuffer;  // 080e3124
+    byte gap_0x80E3128[0xC];
+    const char *sourceBuf;      // 080e3134
+    const char *scriptfilename; // 080e3138
+    byte gap_0x80E313C[0xC];
+    unsigned int currentPos;    // 080e3148
+    byte gap_0x80E314C[0x80];
     uint16_t timeArrayId;       // 080e31cc
     byte gap_0x80E31CE[0x2];
     bool bInited;               // 080e31d0
-    
     byte gap_0x80E31D4[0x20E604];
-
     const char *fieldBuffer;    // 082f17d8
-
     byte gap_0x82F17DC[0x4008];
-
     int function_count;         // 082f57e4
     byte gap_0x82F57E8[0x98];
     const char *error_message;  // 082f5880
@@ -478,6 +487,8 @@ typedef struct
 
 } scr_t;
 #endif
+
+
 
 typedef int fileHandle_t;
 typedef void *unzFile;
@@ -873,20 +884,20 @@ typedef struct client_s
     int downloadBlockSize[MAX_DOWNLOAD_WINDOW];         // 0x10adc
     qboolean downloadEOF;           // 10AFC
     int downloadSendTime;           // 0x10b00
-    int deltaMessage;
-    int nextReliableTime;
-    int lastPacketTime;
-    int lastConnectTime;
-    int nextSnapshotTime;
-    qboolean rateDelayed;
-    int timeoutCount;
-    clientSnapshot_t frames[PACKET_BACKUP];
+    int deltaMessage;               // 0x10B04
+    int nextReliableTime;           // 0x10B08
+    int lastPacketTime;             // 0x10b0c
+    int lastConnectTime;            // 0x10B10
+    int nextSnapshotTime;           // 0x10B14
+    qboolean rateDelayed;           // 0x10B18
+    int timeoutCount;               // 0x10B1C
+    clientSnapshot_t frames[PACKET_BACKUP]; // 0x10B20
     int ping;
     int rate;
     int snapshotMsec;
     int pureAuthentic;
     netchan_t netchan;
-    unsigned short clscriptid;
+    unsigned short scriptId;
     int bIsTestClient;
     int serverId;
 } client_t;
@@ -902,22 +913,56 @@ typedef struct
     qboolean connected;
 } challenge_t;
 
+typedef struct archivedSnapshot_s
+{
+    //...
+} archivedSnapshot_t;
+
+typedef struct cachedClient_s
+{
+    //...
+} cachedClient_t;
+
+typedef struct cachedSnapshot_s
+{
+    //...
+} cachedSnapshot_t;
+
+typedef struct archivedEntityShared_s
+{
+    //...
+} archivedEntityShared_t;
+
+typedef struct archivedEntity_s
+{
+    //...
+} archivedEntity_t;
+
 typedef struct
 {
-    qboolean initialized;
-    int time;
-    int snapFlagServerBit;
-    client_t *clients;
-    int numSnapshotEntities;
-    int numSnapshotClients;
-    int nextSnapshotEntities;
-    int nextSnapshotClients;
-    byte gap[0x34];
-    int nextHeartbeatTime;
-    challenge_t challenges[MAX_CHALLENGES];
-    netadr_t redirectAddress;
-    netadr_t authorizeAddress;
-    int sv_lastTimeMasterServerCommunicated;
+    qboolean initialized;       // 083b67a0
+    int time;                   // 083b67a4
+    int snapFlagServerBit;      // 083b67a8
+    client_t *clients;          // 083b67ac
+    int numSnapshotEntities;    // 083b67b0
+    int numSnapshotClients;     // 083b67b4
+    int nextSnapshotEntities;   // 083b67b8
+    int nextSnapshotClients;    // 083b67bc
+    byte gap_0x83B67C0[0x10];
+    archivedSnapshot_t *archivedSnapshotFrames; // 083b67d0
+    byte *archivedSnapshotBuffer;               // 083b67d4
+    int nextArchivedSnapshotBuffer;
+    int nextCachedSnapshotEntities;
+    int nextCachedSnapshotClients;
+    int nextCachedSnapshotFrames;
+    cachedSnapshot_t *cachedSnapshotFrames;
+    archivedEntity_t *cachedSnapshotEntities;
+    cachedClient_t *cachedSnapshotClients;
+    int nextHeartbeatTime;      // 083b67f4
+    challenge_t challenges[MAX_CHALLENGES];     // 083b67f8
+    netadr_t redirectAddress;   // 083c17f8
+    netadr_t authorizeAddress;  // 083c180c
+    netProfileInfo_t *pOOBProf; // 083c1820
 } serverStatic_t;
 
 typedef struct
@@ -949,31 +994,26 @@ typedef struct
 
 typedef struct
 {
-    serverState_t state;
-    qboolean restarting;
-    int start_frameTime;
-    int	checksumFeed;
-    int timeResidual;
-    byte gap[0x404];
-    char *configstrings[MAX_CONFIGSTRINGS];
-    byte pad[0x60FFC];
-    char *entityParsePoint;
-    gentity_t *gentities;
-    int gentitySize;
-    int	num_entities;
-    playerState_t *gameClients;
-    int gameClientSize;
-    int skelTimeStamp;
-    int	bpsWindow[MAX_BPS_WINDOW];
-    int	bpsWindowSteps;
-    int	bpsTotalBytes;
-    int	bpsMaxBytes;
-    int	ubpsWindow[MAX_BPS_WINDOW];
-    int	ubpsTotalBytes;
-    int	ubpsMaxBytes;
-    float ucompAve;
-    int	ucompNum;
-} server_t; // TODO: Verify, seems too big
+    serverState_t state;    // 08355260
+    qboolean restarting;    // 08355264
+    int serverId;           // 08355268
+    int	checksumFeed;       // 0835526c
+    int timeResidual;       // 08355270
+    byte gap_0x8355274[0x404];
+    char *configstrings[MAX_CONFIGSTRINGS]; // 08355678
+    byte gap_0x8357678[0x5F004];
+    gentity_t *gentities;   // 083b667c
+    byte gap_0x83B6680[0x10];
+    int	bpsWindow[MAX_BPS_WINDOW];  // 083b6690
+    int	bpsWindowSteps; // 083b66e0
+    int	bpsTotalBytes;  // 083b66e4
+    int	bpsMaxBytes;    // 083b66e8
+    int	ubpsWindow[MAX_BPS_WINDOW]; // 83B66EC
+    int	ubpsTotalBytes; // 083b673c
+    int	ubpsMaxBytes;   // 083b6740
+    float ucompAve;     // 083b6744
+    int	ucompNum;       // 083b6748
+} server_t;
 
 typedef struct weaponinfo_t
 {
@@ -1087,7 +1127,7 @@ extern animScriptData_t **globalScriptData;
 #define scrVarPub (*((scrVarPub_t*)(0x082f17d8)))
 #define scrVmPub (*((scrVmPub_t*)(0x082f57e0)))
 #define sv (*((server_t*)(0x08355260)))
-#define sv_serverId_value (*((int*)(0x080e30c0)))
+#define sv_serverId_value (*((int*)(0x080e30c0))) // TODO: Figure out why not using sv.serverId instead.
 #define svs (*((serverStatic_t*)(0x083b67a0)))
 #define com_errorEntered (*((int*)(0x0833efdc)))
 #define gvm (*(vm_t**)(0x080e30c4))
@@ -1098,6 +1138,7 @@ extern animScriptData_t **globalScriptData;
 #define clientStateFields (*((netField_t*)(0x080d2058)))
 #define archivedEntityFields (*((netField_t*)(0x080d1ce0)))
 #define rcon_lasttime (*((int*)(0x080e30c8)))
+#define skelTimeStamp (*((int*)(0x0833df04)))
 
 // Require structure sizes to match
 #if __GNUC__ >= 6
@@ -1112,7 +1153,7 @@ static_assert((sizeof(clientSession_t) == 260), "ERROR: clientSession_t size is 
 static_assert((sizeof(gclient_t) == 8900), "ERROR: gclient_t size is invalid");
 static_assert((sizeof(serverStatic_t) == 45188), "ERROR: serverStatic_t size is invalid");
 static_assert((sizeof(netadr_t) == 20), "ERROR: netadr_t size is invalid");
-//static_assert((sizeof(server_t) == 398572), "ERROR: server_t size is invalid");
+static_assert((sizeof(server_t) == 398572), "ERROR: server_t size is invalid");
 static_assert((sizeof(challenge_t) == 44), "ERROR: challenge_t size is invalid");
 static_assert((sizeof(animation_t) == 92), "ERROR: animation_t size is invalid!");
 #endif

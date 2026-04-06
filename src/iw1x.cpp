@@ -8,6 +8,7 @@ cvar_t *net_lanauthorize;
 cvar_t *sv_allowAnonymous;
 cvar_t *sv_allowDownload;
 cvar_t *sv_floodProtect;
+cvar_t *sv_gametype;
 cvar_t *sv_master[MAX_MASTER_SERVERS];
 cvar_t *sv_maxclients;
 cvar_t *sv_maxRate;
@@ -136,6 +137,7 @@ cHook *hook_SV_BeginDownload_f;
 cHook *hook_SV_SendClientGameState;
 cHook *hook_Sys_LoadDll;
 cHook *hook_BG_PlayAnim;
+cHook *hook_SV_SpawnServer;
 
 void custom_Com_Init(char *commandLine)
 {
@@ -154,6 +156,7 @@ void custom_Com_Init(char *commandLine)
     sv_allowAnonymous = Cvar_FindVar("sv_allowAnonymous");
     sv_allowDownload = Cvar_FindVar("sv_allowDownload");
     sv_floodProtect = Cvar_FindVar("sv_floodProtect");
+    sv_gametype = Cvar_FindVar("g_gametype");
     sv_master[0] = Cvar_FindVar("sv_master1");
     sv_master[1] = Cvar_FindVar("sv_master2");
     sv_master[2] = Cvar_FindVar("sv_master3");
@@ -388,19 +391,218 @@ const char* custom_FS_ReferencedPakChecksums(void)
     return info;
 }
 
+void custom_SV_SpawnServer(char *server)
+{
+#if SQLITE == 1
+    free_sqlite_db_stores_and_tasks();
+#endif
+
+    hook_SV_SpawnServer->unhook();
+    SV_SpawnServer(server);
+    hook_SV_SpawnServer->hook();
+}
+
+void custom_SV_Shutdown(const char *finalmsg)
+{
+    if (!com_sv_running || !com_sv_running->integer)
+    {
+        return;
+    }
+
+    Com_Printf("----- Server Shutdown -----\n");
+
+    if (svs.clients && !com_errorEntered)
+    {
+        int i, j;
+        client_t *cl;
+        
+        for (j = 0; j < 2; j++)
+        {
+            for (i = 0, cl = svs.clients; i < sv_maxclients->integer; i++, cl++)
+            {
+                if (cl->state >= CS_CONNECTED)
+                {
+                    if (cl->netchan.remoteAddress.type != NA_LOOPBACK)
+                    {
+                        SV_SendServerCommand(cl, SV_CMD_CAN_IGNORE, "e \"%s\"", finalmsg);
+                        SV_SendServerCommand(cl, SV_CMD_RELIABLE, "w", finalmsg);
+                    }
+                    cl->nextSnapshotTime = -1;
+                    SV_SendClientSnapshot(cl);
+                }
+            }
+        }
+    }
+
+    SV_MasterShutdown();
+    SV_ShutdownGameProgs();
+    
+    int i;
+    for (i = 0; i < MAX_CONFIGSTRINGS; i++)
+    {
+        if (sv.configstrings[i])
+        {
+            Z_Free(sv.configstrings[i]);
+        }
+    }
+    Com_Memset(&sv, 0, sizeof(sv));
+
+    if (svs.clients)
+    {
+        int i;
+        client_t *cl;
+
+        for (i = 0, cl = svs.clients; i < sv_maxclients->integer; i++, cl++)
+        {
+            if (cl->state < CS_CONNECTED)
+                continue;
+
+            SV_FreeClientScriptId(cl);
+        }
+
+        free(svs.clients);
+    }
+
+#if SQLITE == 1
+    free_sqlite_db_stores_and_tasks();
+#endif
+    
+    if (svs.cachedSnapshotEntities)
+    {
+        Z_Free(svs.cachedSnapshotEntities);
+        svs.cachedSnapshotEntities = NULL;
+    }
+    if (svs.cachedSnapshotClients)
+    {
+        Z_Free(svs.cachedSnapshotClients);
+        svs.cachedSnapshotClients = NULL;
+    }
+    if (svs.archivedSnapshotFrames)
+    {
+        Z_Free(svs.archivedSnapshotFrames);
+        svs.archivedSnapshotFrames = NULL;
+    }
+    if (svs.archivedSnapshotBuffer)
+    {
+        Z_Free(svs.archivedSnapshotBuffer);
+        svs.archivedSnapshotBuffer = NULL;
+    }
+    if (svs.cachedSnapshotFrames)
+    {
+        Z_Free(svs.cachedSnapshotFrames);
+        svs.cachedSnapshotFrames = NULL;
+    }
+    
+    memset(&svs, 0, sizeof(svs));
+    
+    Cvar_Set("sv_running", "0");
+    Com_Printf("---------------------------\n");
+}
+
+void custom_SV_MapRestart_f(void)
+{
+    int savepersist;
+    client_t *client;
+    char *denied;
+    char mapname[MAX_QPATH];
+    int i;
+
+    if (com_frameTime == sv.serverId)
+    {
+        return;
+    }
+
+    if (!com_sv_running->integer)
+    {
+        Com_Printf("Server is not running.\n");
+        return;
+    }
+    
+    savepersist = VM_Call(gvm, GAME_SAVEPERSIST_GET);
+    if (!savepersist)
+    {
+        if (!sv_gametype->latchedString || !strcasecmp(sv_gametype->latchedString, sv_gametype->string))
+        {
+            if (!sv_maxclients->modified)
+            {
+                goto LAB_08083eb0;
+            }
+            Com_Printf("sv_maxclients variable change -- restarting.\n");
+        }
+        else
+        {
+            Com_Printf("g_gametype variable change -- restarting.\n");
+        }
+        Q_strncpyz(mapname, Cvar_VariableString("mapname"), sizeof(mapname));
+        SV_SpawnServer(mapname);
+        return;
+    }
+    
+LAB_08083eb0:
+
+#if SQLITE == 1
+    free_sqlite_db_stores_and_tasks();
+#endif
+
+    SV_InitArchivedSnapshot();
+
+    svs.snapFlagServerBit ^= SNAPFLAG_SERVERCOUNT;
+    sv_serverId_value = (sv_serverId_value & 0xf0) + ((sv_serverId_value + 1) & 0xf);
+    Cvar_Set("sv_serverid", va("%i", sv_serverId_value));
+    sv.serverId = com_frameTime;
+    sv.state = SS_LOADING;
+    sv.restarting = qtrue;
+    Cvar_Set("sv_serverRestarting", "1");
+
+    XAnimSetUser(1);
+    SV_RestartGameProgs(savepersist);
+
+    for (i = 0; i < GAME_INIT_FRAMES; i++ )
+    {
+        svs.time += FRAMETIME;
+        SV_RunFrame();
+    }
+
+    for (i = 0; i < sv_maxclients->integer; i++)
+    {
+        client = &svs.clients[i];
+
+        if(client->state < CS_CONNECTED)
+            continue;
+        
+        SV_AddServerCommand(client, SV_CMD_RELIABLE, "n");
+
+        denied = (char *)VM_Call(gvm, GAME_CLIENT_CONNECT, i, client->scriptId);
+        if (denied)
+        {
+            SV_DropClient(client, denied);
+            Com_Printf("SV_MapRestart_f: dropped client %i - denied!\n", i);
+        }
+        else if (client->state == CS_ACTIVE)
+        {
+            SV_ClientEnterWorld(client, &client->lastUsercmd);
+        }
+    }
+    
+    sv.state = SS_GAME;
+    sv.restarting = qfalse;
+    
+    Cvar_Set("sv_serverRestarting", "0");
+}
+
 void custom_SV_PacketEvent(netadr_t from, msg_t *msg)
 {
     int qport;
     client_t *cl;
     int i;
     
-    int *unknown_var = (int*)0x080e30cc;
+    int *unknown_var = (int*)0x080e30cc; // It might be unused, seems never read according to Ghidra.
     
     if (msg->cursize < 4 || *(int *)msg->data != -1)
     {
         //// See https://github.com/voron00/CoD2rev_Server/blob/b012c4b45a25f7f80dc3f9044fe9ead6463cb5c6/src/server/sv_game_mp.cpp#L399
-        if(sv.skelTimeStamp++ == -1)
-            sv.skelTimeStamp = 1;
+        if(skelTimeStamp++ == -1)
+            skelTimeStamp = 1;
         ////
         *unknown_var = 1;
         
@@ -941,7 +1143,7 @@ void custom_SV_GetChallenge(netadr_t from)
                 );
     }
     
-    if ((AUTHORIZE_TIMEOUT < svs.time - svs.sv_lastTimeMasterServerCommunicated) && (AUTHORIZE_TIMEOUT < svs.time - challenge->firstTime))
+    if (svs.time - challenge->firstTime > AUTHORIZE_TIMEOUT)
     {
         Com_DPrintf("authorize server timed out\n");
         challenge->pingTime = svs.time;
@@ -1920,7 +2122,7 @@ void hook_ClientCommand(int clientNum)
         return;
 
     ent = &g_entities[clientNum];
-	if(!ent->client)
+    if(!ent->client)
         return;
 
     char* cmd = Cmd_Argv(0);
@@ -2445,6 +2647,8 @@ class iw1x
         hook_jmp(0x0808bd58, (int)custom_SVC_Status);
         hook_jmp(0x08084524, (int)custom_SV_BanNum_f);
         hook_jmp(0x08086168, (int)custom_SV_NextDownload_f);
+        hook_jmp(0x0808ad8c, (int)custom_SV_Shutdown);
+        hook_jmp(0x08083de4, (int)custom_SV_MapRestart_f);
 
 
         //hook_jmp(0x080aa158, (int)custom_Scr_ErrorInternal);
@@ -2459,6 +2663,8 @@ class iw1x
         hook_Com_Init->hook();
         hook_SV_BeginDownload_f = new cHook(0x08087a64, (int)custom_SV_BeginDownload_f);
         hook_SV_BeginDownload_f->hook();
+        hook_SV_SpawnServer = new cHook(0x0808a220, (int)custom_SV_SpawnServer);
+        hook_SV_SpawnServer->hook();
 
         printf("----------------------\n");
     }

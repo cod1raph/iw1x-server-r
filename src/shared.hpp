@@ -11,4 +11,6 @@ extern customPlayerState_t customPlayerState[MAX_CLIENTS];
 extern scr_function_t customScriptFunctions[];
 extern scr_method_t customScriptMethods[];
 
+void free_sqlite_db_stores_and_tasks();
+
 #endif

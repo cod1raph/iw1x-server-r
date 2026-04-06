@@ -7,11 +7,13 @@ int stackGetParams(const char *params, ...);
 void stackError(const char *format, ...);
 
 int stackGetParamInt(int param, int *value);
-int stackGetParamString(int param, char **value);
+int stackGetParamString(int param, const char **value);
 int stackGetParamConstString(int param, unsigned int *value);
 int stackGetParamLocalizedString(int param, char **value);
 int stackGetParamVector(int param, vec3_t value);
 int stackGetParamFloat(int param, float *value);
+int stackGetParamObject(int param, unsigned int *value);
+int stackGetParamFunction(int param, int *value);
 
 //// Entity
 void gsc_entity_showtoplayer(scr_entref_t ref);
@@ -72,6 +74,23 @@ void gsc_utils_issubstr();
 void gsc_utils_getsubstr();
 void gsc_utils_getsystemtime();
 void gsc_utils_getconfigstring();
+////
+
+//// SQLite
+void gsc_sqlite_open();
+void gsc_sqlite_query();
+void gsc_sqlite_close();
+void gsc_sqlite_escape_string();
+void gsc_sqlite_databases_count();
+void gsc_sqlite_tasks_count();
+
+void gsc_async_sqlite_initialize();
+void gsc_async_sqlite_create_query();
+void gsc_async_sqlite_create_query_nosave();
+void gsc_async_sqlite_checkdone();
+
+void gsc_async_sqlite_create_entity_query(scr_entref_t entid);
+void gsc_async_sqlite_create_entity_query_nosave(scr_entref_t entid);
 ////
 
 //// For tests

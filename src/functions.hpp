@@ -41,6 +41,9 @@ typedef int (*BG_GetWeaponIndexForName_t)(const char *name);
 extern BG_GetWeaponIndexForName_t BG_GetWeaponIndexForName;
 
 typedef int (*BG_PlayAnim_t)(playerState_t *ps, int animNum, int bodyPart, int forceDuration, qboolean setTimer, qboolean isContinue, qboolean force);
+
+typedef char* (*XAnimSetUser_t)(int);
+static const XAnimSetUser_t XAnimSetUser = (XAnimSetUser_t)0x080bfea0;
 ////
 
 //// Cmd
@@ -97,6 +100,9 @@ typedef void (*Com_EndRedirect_t)(void);
 static const Com_EndRedirect_t Com_EndRedirect = (Com_EndRedirect_t)0x0806d8d0;
 
 typedef void (*Com_ScriptError_t)(const char *msg, ...);
+
+typedef void (*Com_Memset_t)(void* dest, const int val, const size_t count);
+static const Com_Memset_t Com_Memset = (Com_Memset_t)0x080c54a0;
 ////
 
 //// Cvar
@@ -310,12 +316,15 @@ typedef void (*Scr_Error_t)(const char *error);
 extern Scr_Error_t Scr_Error;
 
 typedef short (*Scr_ExecThread_t)(int callbackHook, unsigned int numArgs);
+extern Scr_ExecThread_t Scr_ExecThread;
 
 typedef short (*Scr_ExecEntThread_t)(gentity_t* ent, int callbackHook, unsigned int numArgs);
+extern Scr_ExecEntThread_t Scr_ExecEntThread;
 
 typedef unsigned short (*Scr_ExecEntThreadNum_t)(int entnum, unsigned int classnum, int handle, unsigned int paramcount);
 
 typedef short (*Scr_FreeThread_t)(short thread_id);
+extern Scr_FreeThread_t Scr_FreeThread;
 
 typedef int (*Scr_GetFunctionHandle_t)(const char* scriptName, const char* labelName);
 
@@ -506,6 +515,15 @@ static const SV_CanReplaceServerCommand_t SV_CanReplaceServerCommand = (SV_CanRe
 
 typedef void (*SV_FlushRedirect_t)(char *outputbuf);
 static const SV_FlushRedirect_t SV_FlushRedirect = (SV_FlushRedirect_t)0x0808d318;
+
+typedef void (*SV_MasterShutdown_t)();
+static const SV_MasterShutdown_t SV_MasterShutdown = (SV_MasterShutdown_t)0x0808d268;
+
+typedef void (*SV_ShutdownGameProgs_t)();
+static const SV_ShutdownGameProgs_t SV_ShutdownGameProgs = (SV_ShutdownGameProgs_t)0x080892f4;
+
+typedef void (*SV_FreeClientScriptId_t)(client_t *cl);
+static const SV_FreeClientScriptId_t SV_FreeClientScriptId = (SV_FreeClientScriptId_t)0x0808d34c;
 ////
 
 //// SVC
