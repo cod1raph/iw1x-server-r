@@ -31,6 +31,8 @@ Using Linux
 
 Obtain `iw1x.so` from `build/bin`
 
+To build with SQLite support: `cmake -DSQLITE=ON ..` (needs `libsqlite3-dev:i386`)
+
 ---
 ---
 ---
