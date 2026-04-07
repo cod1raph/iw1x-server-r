@@ -6,7 +6,7 @@
 > 3/25/2026  
 > Deleted the `replace` gsc function, MiscMod users would have to disable it
 
-Based on: https://vcodmods.com/server/iw1x-server-source
+Old version: https://vcodmods.com/server/iw1x-server-source
 # CoD 1.1 server mod
 **Focused on improving downloading and security**
 
