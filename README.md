@@ -26,7 +26,7 @@ Using Linux
 
 - `apt install cmake g++-multilib`
 - download the repo, then `cd build`
-- `cmake ..`, or if you will use MiscMod, use `cmake -DENABLE_FILE_HANDLING=ON ..` instead
+- `cmake ..`, or if you will use MiscMod, use `cmake -DFILE_HANDLING=ON ..` instead
 - `make`
 
 Obtain `iw1x.so` from `build/bin`
