@@ -310,9 +310,9 @@ int stackGetParamFloat(int param, float *value)
     return 1;
 }
 
-int stackGetParamObject(int param, unsigned int *value)
+int stackGetParamObject(int param, unsigned int *value) // TODO: Verify
 {
-    printf("####### stackGetParamObject\n");
+    //printf("####### stackGetParamObject\n");
 
     if(param >= Scr_GetNumParam())
         return 0;
@@ -325,13 +325,13 @@ int stackGetParamObject(int param, unsigned int *value)
 
     *value = var->u.pointerValue;
 
+    //printf("####### stackGetParamObject PASS\n");
+
     return 1;
 }
 
 int stackGetParamFunction(int param, int *value)
 {
-    printf("####### stackGetParamFunction\n");
-
     if(param >= Scr_GetNumParam())
         return 0;
 
