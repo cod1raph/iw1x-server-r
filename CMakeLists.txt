@@ -27,9 +27,9 @@ message(STATUS "SQLITE: ${SQLITE}")
 message(STATUS "${SEPARATOR}")
 
 if(FILE_HANDLING)
-    add_definitions(-DENABLE_FILE_HANDLING=1)
+    add_definitions(-DFILE_HANDLING=1)
 else()
-    add_definitions(-DENABLE_FILE_HANDLING=0)
+    add_definitions(-DFILE_HANDLING=0)
 endif()
 
 if(SQLITE)

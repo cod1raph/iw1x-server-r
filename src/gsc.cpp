@@ -2,7 +2,7 @@
 
 scr_function_t customScriptFunctions[] =
 {
-#if ENABLE_FILE_HANDLING == 1
+#if FILE_HANDLING == 1
     {"file_exists", gsc_utils_file_exists, qfalse},
     {"fopen", gsc_utils_fopen, qfalse},
     {"fwrite", gsc_utils_fwrite, qfalse},
