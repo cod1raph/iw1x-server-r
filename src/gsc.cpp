@@ -33,6 +33,7 @@ scr_function_t customScriptFunctions[] =
     {"getSubStr", gsc_utils_getsubstr, qfalse},
     {"getSystemTime", gsc_utils_getsystemtime, qfalse},
     {"getConfigString", gsc_utils_getconfigstring, qfalse},
+    {"strftime", gsc_utils_strftime, 0},
     
     //// Weapons
     {"setWeaponCookable", gsc_weapons_setweaponcookable, qfalse},

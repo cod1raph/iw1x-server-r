@@ -341,3 +341,40 @@ void gsc_utils_getsubstr()
     tempString[i] = 0;
     Scr_AddString(tempString);
 }
+
+void gsc_utils_strftime()
+{
+    int timestamp;
+    char *timezone;
+    char *format;
+    
+    if (!stackGetParams("iss", &timestamp, &timezone, &format))
+    {
+        stackError("gsc_utils_strftime() one or more arguments is undefined or has a wrong type");
+        Scr_AddUndefined();
+        return;
+    }
+
+    time_t rawTime = timestamp;
+    struct tm *timeInfo;
+
+    if(!strcmp(timezone, "utc"))
+        timeInfo = gmtime(&rawTime);
+    else if(!strcmp(timezone, "local"))
+        timeInfo = localtime(&rawTime);
+    else
+    {
+        stackError("gsc_utils_strftime() invalid argument '%s'. Valid values are: 'utc' 'local'", timezone);
+        Scr_AddUndefined();
+        return;
+    }
+
+    char buffer[100];
+    if(strftime(buffer, sizeof(buffer), format, timeInfo))
+        Scr_AddString(buffer);
+    else
+    {
+        stackError("gsc_utils_strftime() failed to format time");
+        Scr_AddUndefined();
+    }
+}

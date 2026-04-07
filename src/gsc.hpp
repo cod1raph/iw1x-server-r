@@ -74,6 +74,7 @@ void gsc_utils_issubstr();
 void gsc_utils_getsubstr();
 void gsc_utils_getsystemtime();
 void gsc_utils_getconfigstring();
+void gsc_utils_strftime();
 ////
 
 //// SQLite
