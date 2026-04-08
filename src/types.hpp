@@ -19,13 +19,14 @@
 #define PORT_MASTER 20510
 #define PORT_AUTHORIZE 20500
 #define	HEARTBEAT_MSEC 180000
-#define HMAX 256
 #define AUTHORIZE_TIMEOUT 5000
 #define AUTHORIZE_SERVER_NAME "codauthorize.activision.com"
 #define SVF_SINGLECLIENT 0x800
 #define ANIM_BITS 10
 #define ANIM_TOGGLEBIT (1 << ( ANIM_BITS - 1))
 #define WP_NONE 0
+#define HMAX 256
+#define INTERNAL_NODE (HMAX + 1)
 
 #define MAX_BPS_WINDOW              20
 #define MAX_CHALLENGES              1024
@@ -1139,6 +1140,7 @@ extern animScriptData_t **globalScriptData;
 #define archivedEntityFields (*((netField_t*)(0x080d1ce0)))
 #define rcon_lasttime (*((int*)(0x080e30c8)))
 #define skelTimeStamp (*((int*)(0x0833df04)))
+#define bloc (*((int*)(0x080dded8)))
 
 // Require structure sizes to match
 #if __GNUC__ >= 6

@@ -130,7 +130,6 @@ bool playerCommand = false;
 
 cHook *hook_ClientEndFrame;
 cHook *hook_Com_Init;
-cHook *hook_DeathmatchScoreboardMessage;
 cHook *hook_GScr_LoadGameTypeScript;
 cHook *hook_PM_FlyMove;
 cHook *hook_SV_BeginDownload_f;
@@ -139,7 +138,7 @@ cHook *hook_Sys_LoadDll;
 cHook *hook_BG_PlayAnim;
 cHook *hook_SV_SpawnServer;
 
-void custom_Com_Init(char *commandLine)
+void jmp_Com_Init(char *commandLine)
 {
     hook_Com_Init->unhook();
     void (*Com_Init)(char *commandLine);
@@ -197,7 +196,7 @@ void custom_Com_Init(char *commandLine)
     ////
 }
 
-xfunction_t hook_Scr_GetFunction(const char **name, int *developer)
+xfunction_t call_Scr_GetFunction(const char **name, int *developer)
 {
     xfunction_t function = Scr_GetFunction(name, developer);
     if(function)
@@ -216,7 +215,7 @@ xfunction_t hook_Scr_GetFunction(const char **name, int *developer)
     return NULL;
 }
 
-xmethod_t hook_Scr_GetMethod(const char **name, qboolean *developer)
+xmethod_t call_Scr_GetMethod(const char **name, qboolean *developer)
 {
     xmethod_t method = Scr_GetMethod(name, developer);
     if(method)
@@ -237,7 +236,7 @@ xmethod_t hook_Scr_GetMethod(const char **name, qboolean *developer)
 
 // See https://github.com/xtnded/codextended/blob/855df4fb01d20f19091d18d46980b5fdfa95a712/src/shared.c#L632
 #define MAX_VA_STRING 32000
-char *custom_va(const char *format, ...)
+char *jmp_va(const char *format, ...)
 {
     va_list argptr;
     static char temp_buffer[MAX_VA_STRING];
@@ -264,7 +263,7 @@ char *custom_va(const char *format, ...)
 
 // See https://github.com/xtnded/codextended/blob/855df4fb01d20f19091d18d46980b5fdfa95a712/src/script.c#L944
 static int localizedStringIndex = 128;
-int custom_G_LocalizedStringIndex(const char *string)
+int jmp_G_LocalizedStringIndex(const char *string)
 {
     int i;
     int start = 1244;
@@ -294,7 +293,7 @@ int custom_G_LocalizedStringIndex(const char *string)
     return i;
 }
 
-void custom_GScr_LoadGameTypeScript()
+void jmp_GScr_LoadGameTypeScript()
 {
     hook_GScr_LoadGameTypeScript->unhook();
     void (*GScr_LoadGameTypeScript)();
@@ -306,7 +305,7 @@ void custom_GScr_LoadGameTypeScript()
     {
         if (!Scr_LoadScript(fs_callbacks_additional->string))
         {
-            Com_DPrintf("custom_GScr_LoadGameTypeScript: Scr_LoadScript for fs_callbacks_additional failed.\n");
+            Com_DPrintf("jmp_GScr_LoadGameTypeScript: Scr_LoadScript for fs_callbacks_additional failed.\n");
         }
         else
         {
@@ -347,7 +346,7 @@ qboolean FS_svrPak(const char *base)
     return qfalse;
 }
 
-const char* custom_FS_ReferencedPakNames(void)
+const char* jmp_FS_ReferencedPakNames(void)
 {
     static char info[BIG_INFO_STRING];
     searchpath_t *search;
@@ -371,7 +370,7 @@ const char* custom_FS_ReferencedPakNames(void)
     return info;
 }
 
-const char* custom_FS_ReferencedPakChecksums(void)
+const char* jmp_FS_ReferencedPakChecksums(void)
 {
     static char info[BIG_INFO_STRING];
     searchpath_t *search;
@@ -391,7 +390,7 @@ const char* custom_FS_ReferencedPakChecksums(void)
     return info;
 }
 
-void custom_SV_SpawnServer(char *server)
+void jmp_SV_SpawnServer(char *server)
 {
 #if SQLITE == 1
     free_sqlite_db_stores_and_tasks();
@@ -402,7 +401,7 @@ void custom_SV_SpawnServer(char *server)
     hook_SV_SpawnServer->hook();
 }
 
-void custom_SV_Shutdown(const char *finalmsg)
+void jmp_SV_Shutdown(const char *finalmsg)
 {
     if (!com_sv_running || !com_sv_running->integer)
     {
@@ -499,7 +498,7 @@ void custom_SV_Shutdown(const char *finalmsg)
     Com_Printf("---------------------------\n");
 }
 
-void custom_SV_MapRestart_f(void)
+void jmp_SV_MapRestart_f(void)
 {
     int savepersist;
     client_t *client;
@@ -590,7 +589,7 @@ LAB_08083eb0:
     Cvar_Set("sv_serverRestarting", "0");
 }
 
-void custom_SV_PacketEvent(netadr_t from, msg_t *msg)
+void jmp_SV_PacketEvent(netadr_t from, msg_t *msg)
 {
     int qport;
     client_t *cl;
@@ -669,7 +668,7 @@ void custom_SV_PacketEvent(netadr_t from, msg_t *msg)
     }
 }
 
-int custom_SV_CanReplaceServerCommand(client_t *client, const char *command)
+int jmp_SV_CanReplaceServerCommand(client_t *client, const char *command)
 {
     //// [exploit patch] UNTESTED
     return -1;
@@ -691,7 +690,7 @@ See:
 TODO: Check if issue wasn't caused by not ignoring SV_AuthorizeIpPacket
 See https://github.com/xtnded/codextended/blob/f7b28c8b8ee4cfb03f8d46d6e1df2efe0380cc1b/src/sv_client.c#L234
 */
-void custom_SV_MasterHeartbeat(const char *hbname)
+void jmp_SV_MasterHeartbeat(const char *hbname)
 {
     static netadr_t adr[MAX_MASTER_SERVERS];
     int i;
@@ -1014,7 +1013,7 @@ void SV_BanClient(client_t *cl)
     SV_DropClient(cl, "EXE_PLAYERKICKED");
     cl->lastPacketTime = svs.time;
 }
-static void custom_SV_BanNum_f(void)
+static void jmp_SV_BanNum_f(void)
 {
     client_t *cl;
     
@@ -1061,7 +1060,7 @@ void SV_AuthorizeRequest(netadr_t from, int challenge)
         )
     );
 }
-void custom_SV_GetChallenge(netadr_t from)
+void jmp_SV_GetChallenge(netadr_t from)
 {
     // Prevent using getchallenge as an amplifier
     if (SVC_RateLimitAddress(from, 10, 1000))
@@ -1157,7 +1156,7 @@ void custom_SV_GetChallenge(netadr_t from)
     SV_AuthorizeRequest(from, svs.challenges[i].challenge);
 }
 
-void hook_SV_DirectConnect(netadr_t from)
+void call_SV_DirectConnect(netadr_t from)
 {
     // Prevent using connect as an amplifier
     if (SVC_RateLimitAddress(from, 10, 1000))
@@ -1199,7 +1198,7 @@ void hook_SV_DirectConnect(netadr_t from)
     SV_DirectConnect(from);
 }
 
-void hook_SV_AuthorizeIpPacket(netadr_t from)
+void call_SV_AuthorizeIpPacket(netadr_t from)
 {
     // Prevent ipAuthorize log spam DoS
     if (SVC_RateLimitAddress(from, 20, 1000))
@@ -1236,7 +1235,7 @@ void hook_SV_AuthorizeIpPacket(netadr_t from)
     SV_AuthorizeIpPacket(from);
 }
 
-void hook_SVC_Info(netadr_t from)
+void call_SVC_Info(netadr_t from)
 {
     // Prevent using getinfo as an amplifier
     if (SVC_RateLimitAddress(from, 10, 1000))
@@ -1257,7 +1256,7 @@ void hook_SVC_Info(netadr_t from)
 
     SVC_Info(from);
 }
-void hook_SVC_Info_Info_SetValueForKey_gametype_mapname(char *s, const char *key, const char *value)
+void call_SVC_Info_Info_SetValueForKey_gametype_mapname(char *s, const char *key, const char *value)
 {
     const char* finalValue = value;
     const char *g_gametype_color = "g_gametype_color";
@@ -1285,7 +1284,7 @@ void hook_SVC_Info_Info_SetValueForKey_gametype_mapname(char *s, const char *key
     Info_SetValueForKey(s, key, finalValue);
 }
 
-void custom_SVC_Status(netadr_t from)
+void jmp_SVC_Status(netadr_t from)
 {
     char player[MAX_INFO_STRING];
     char infostring[MAX_INFO_STRING];
@@ -1366,8 +1365,7 @@ bool str_iseq(const char *s1, const char *s2)
 
     return m == 0;
 }
-
-void custom_SVC_RemoteCommand(netadr_t from, msg_t *msg)
+void jmp_SVC_RemoteCommand(netadr_t from, msg_t *msg)
 {
     char sv_outputbuf[SV_OUTPUTBUF_LENGTH];
     int argc;
@@ -1385,7 +1383,7 @@ void custom_SVC_RemoteCommand(netadr_t from, msg_t *msg)
     - https://github.com/xtnded/codextended/blob/855df4fb01d20f19091d18d46980b5fdfa95a712/src/codextended.c#L291
     - https://github.com/ibuddieat/zk_libcod/blob/dec45a39e3ae8f049cf5d7f4f5b8ec89dea88b3d/code/libcod.cpp#L4865
     */
-    // (patch = no more return)
+    // (patch = no return)
 
     /*int time = Com_Milliseconds();
     if(rcon_lasttime && time < (rcon_lasttime + 500))
@@ -1444,7 +1442,7 @@ void custom_SVC_RemoteCommand(netadr_t from, msg_t *msg)
     Com_EndRedirect();
 }
 
-const char* hook_AuthorizeState(int arg)
+const char* call_AuthorizeState(int arg)
 {
     const char* s = Cmd_Argv(arg);
     if(sv_cracked->integer && !strcmp(s, "deny"))
@@ -1452,7 +1450,7 @@ const char* hook_AuthorizeState(int arg)
     return s;
 }
 
-void custom_SV_SendClientGameState(client_t *client)
+void jmp_SV_SendClientGameState(client_t *client)
 {
     int start;
     entityState_t /**base,*/ nullstate;
@@ -1552,6 +1550,47 @@ void custom_SV_SendClientGameState(client_t *client)
     SV_SendMessageToClient(&msg, client);
 }
 
+/*static int get_bit(byte *fin)
+{
+    int t;
+    t = fin[bloc >> 3] >> (bloc & 7) & 0x1;
+    bloc++;
+    return t;
+}
+// See https://github.com/ibuddieat/zk_libcod/blob/31f75834e508b900f8b83d4264bd54c8036dc445/code/libcod.cpp#L10493
+void custom_Huff_offsetReceive(node_t *node, int *ch, byte *fin, int readsize, int *offset)
+{
+    bloc = *offset;
+    while (node && node->symbol == INTERNAL_NODE)
+    {
+        if (bloc >= readsize)
+        {
+            Com_Printf("OOB buffer access attempt\n");
+            *ch = 0;
+            *offset = readsize + 1;
+            return;
+        }
+        if (!get_bit(fin))
+        {
+            node = node->left;
+        }
+        else
+        {
+            node = node->right;
+        }
+    }
+    if (!node)
+    {
+        *ch = 0;
+    }
+    else
+    {
+        *ch = node->symbol;
+        *offset = bloc;
+    }
+}*/
+
+// See https://github.com/ibuddieat/zk_libcod/blob/31f75834e508b900f8b83d4264bd54c8036dc445/code/libcod.cpp#L10526
 int custom_MSG_ReadBitsCompress(const byte* input, byte* outputBuf, int readsize, int outputBufSize)
 {
     readsize = readsize * 8;
@@ -1566,6 +1605,7 @@ int custom_MSG_ReadBitsCompress(const byte* input, byte* outputBuf, int readsize
 
     for (offset = 0, i = 0; offset < readsize && i < outputBufSize; i++)
     {
+        //custom_Huff_offsetReceive(msgHuff.decompressor.tree, &get, (byte*)input, readsize, &offset);
         Huff_offsetReceive(msgHuff.decompressor.tree, &get, (byte*)input, &offset); // See https://github.com/callofduty4x/CoD4x_Server/pull/396
         *outptr = (byte)get;
         outptr++;
@@ -1574,7 +1614,7 @@ int custom_MSG_ReadBitsCompress(const byte* input, byte* outputBuf, int readsize
     return i;
 }
 
-void custom_SV_ExecuteClientMessage(client_t *cl, msg_t *msg)
+void jmp_SV_ExecuteClientMessage(client_t *cl, msg_t *msg)
 {
     byte outputBuf[MAX_MSGLEN];
     msg_t decompressMsg;
@@ -1662,7 +1702,7 @@ bool shouldServeFile(const char *requestedFilePath)
     }
     return false;
 }
-void custom_SV_BeginDownload_f(client_t *cl)
+void jmp_SV_BeginDownload_f(client_t *cl)
 {
     //// [exploit patch] q3dirtrav
     /* See:
@@ -1688,8 +1728,6 @@ void custom_SV_BeginDownload_f(client_t *cl)
     ////
 
     hook_SV_BeginDownload_f->unhook();
-    void (*SV_BeginDownload_f)(client_t *cl);
-    *(int*)&SV_BeginDownload_f = hook_SV_BeginDownload_f->from;
     SV_BeginDownload_f(cl);
     hook_SV_BeginDownload_f->hook();
 }
@@ -1703,7 +1741,7 @@ void SV_WriteDownloadErrorToClient(client_t *cl, msg_t *msg, char *errorMessage)
     MSG_WriteString(msg, errorMessage);
     *cl->downloadName = 0;
 }
-void custom_SV_WriteDownloadToClient(client_t *cl, msg_t *msg)
+void jmp_SV_WriteDownloadToClient(client_t *cl, msg_t *msg)
 {
     int curindex;
     int blksize;
@@ -1724,9 +1762,9 @@ void custom_SV_WriteDownloadToClient(client_t *cl, msg_t *msg)
             Com_Printf("clientDownload: %d : \"%s\" download disabled\n", cl - svs.clients, cl->downloadName);
 
             if(sv_pure->integer)
-                Com_sprintf(errorMessage, sizeof(errorMessage), "EXE_AUTODL_SERVERDISABLED_PURE\x15%s", cl->downloadName);
+                Com_sprintf(errorMessage, sizeof(errorMessage), "EXE_AUTODL_SERVERDISABLED_PURE %s", cl->downloadName);
             else
-                Com_sprintf(errorMessage, sizeof(errorMessage), "EXE_AUTODL_SERVERDISABLED\x15%s", cl->downloadName);
+                Com_sprintf(errorMessage, sizeof(errorMessage), "EXE_AUTODL_SERVERDISABLED %s", cl->downloadName);
 
             SV_WriteDownloadErrorToClient(cl, msg, errorMessage);
             return;
@@ -1736,7 +1774,7 @@ void custom_SV_WriteDownloadToClient(client_t *cl, msg_t *msg)
         if (FS_iwPak(downloadNameNoExt, "main"))
         {
             Com_Printf("clientDownload: %d : \"%s\" cannot download id pk3 files\n", cl - svs.clients, cl->downloadName);
-            Com_sprintf(errorMessage, sizeof(errorMessage), "EXE_CANTAUTODLGAMEPAK\x15%s", cl->downloadName);
+            Com_sprintf(errorMessage, sizeof(errorMessage), "EXE_CANTAUTODLGAMEPAK %s", cl->downloadName);
             SV_WriteDownloadErrorToClient(cl, msg, errorMessage);
             return;
         }
@@ -1744,7 +1782,7 @@ void custom_SV_WriteDownloadToClient(client_t *cl, msg_t *msg)
         if ((cl->downloadSize = FS_SV_FOpenFileRead(cl->downloadName, &cl->download)) <= 0)
         {
             Com_Printf("clientDownload: %d : \"%s\" file not found on server\n", cl - svs.clients, cl->downloadName);
-            Com_sprintf(errorMessage, sizeof(errorMessage), "EXE_AUTODL_FILENOTONSERVER\x15%s", cl->downloadName);
+            Com_sprintf(errorMessage, sizeof(errorMessage), "EXE_AUTODL_FILENOTONSERVER %s", cl->downloadName);
             SV_WriteDownloadErrorToClient(cl, msg, errorMessage);
             return;
         }
@@ -1832,7 +1870,7 @@ void custom_SV_WriteDownloadToClient(client_t *cl, msg_t *msg)
     cl->downloadSendTime = svs.time;
 }
 
-void custom_SV_NextDownload_f(client_t *cl)
+void jmp_SV_NextDownload_f(client_t *cl)
 {
     int block = atoi(Cmd_Argv(1));
     int clientNum = cl - svs.clients;
@@ -1898,7 +1936,7 @@ static int SV_RateMsec(client_t *client, int messageSize)
     return rateMsec;
 }
 
-void custom_SV_SendClientMessages(void)
+void jmp_SV_SendClientMessages(void)
 {
     int i;
     client_t *cl;
@@ -2006,7 +2044,7 @@ void custom_SV_SendClientMessages(void)
     }
 }
 
-void custom_SV_SendMessageToClient(msg_t *msg, client_t *client)
+void jmp_SV_SendMessageToClient(msg_t *msg, client_t *client)
 {
     byte svCompressBuf[MAX_MSGLEN];
     int compressedSize;
@@ -2049,7 +2087,7 @@ void custom_SV_SendMessageToClient(msg_t *msg, client_t *client)
     sv.bpsTotalBytes += compressedSize;
 }
 
-qboolean custom_SV_ClientCommand(client_t *cl, msg_t *msg)
+qboolean jmp_SV_ClientCommand(client_t *cl, msg_t *msg)
 {
     int seq;
     char *s;
@@ -2114,7 +2152,7 @@ void Cmd_Swap_f(gentity_t *ent)
     }
 }
 
-void hook_ClientCommand(int clientNum)
+void call_ClientCommand(int clientNum)
 {
     gentity_t *ent;
 
@@ -2177,7 +2215,7 @@ void hook_ClientCommand(int clientNum)
 }
 
 // See https://github.com/xtnded/codextended/blob/855df4fb01d20f19091d18d46980b5fdfa95a712/src/sv_client.c#L940
-void hook_G_Say(gentity_s *ent, gentity_s *target, int mode, const char *chatText)
+void call_G_Say(gentity_s *ent, gentity_s *target, int mode, const char *chatText)
 {
     int unknown_var = *(int*)((int)ent->client + 8400);
     if(unknown_var && !g_deadChat->integer)
@@ -2186,7 +2224,7 @@ void hook_G_Say(gentity_s *ent, gentity_s *target, int mode, const char *chatTex
     G_Say(ent, NULL, mode, chatText);
 }
 
-void custom_ClientEndFrame(gentity_t *ent)
+void jmp_ClientEndFrame(gentity_t *ent)
 {
     hook_ClientEndFrame->unhook();
     void (*ClientEndFrame)(gentity_t *ent);
@@ -2204,7 +2242,7 @@ void custom_ClientEndFrame(gentity_t *ent)
     }
 }
 
-void custom_PM_FlyMove()
+void jmp_PM_FlyMove()
 {
     if (sv_spectatorNoclip->integer)
     {
@@ -2219,14 +2257,14 @@ void custom_PM_FlyMove()
     hook_PM_FlyMove->hook();
 }
 
-qboolean hook_StuckInClient(gentity_s *self)
+qboolean call_StuckInClient(gentity_s *self)
 {
     if(!g_playerEject->integer)
         return qfalse;
     return StuckInClient(self);
 }
 
-int custom_BG_PlayAnim(playerState_t *ps, int animNum, int bodyPart, int forceDuration, qboolean setTimer, qboolean isContinue, qboolean force)
+int jmp_BG_PlayAnim(playerState_t *ps, int animNum, int bodyPart, int forceDuration, qboolean setTimer, qboolean isContinue, qboolean force)
 {
     int duration;
 
@@ -2253,7 +2291,7 @@ Stock BG_ExecuteCommand doesn't call BG_PlayAnim, althought it exists,
 so making BG_ExecuteCommand call BG_PlayAnim for setAnimation to work.
 TODO: Figure out if should make PM_CheckDuck call BG_PlayAnim too.
 */
-int custom_BG_ExecuteCommand(playerState_t *ps, animScriptCommand_t *scriptCommand, qboolean setTimer, qboolean isContinue, qboolean force)
+int jmp_BG_ExecuteCommand(playerState_t *ps, animScriptCommand_t *scriptCommand, qboolean setTimer, qboolean isContinue, qboolean force)
 {
     int duration = -1;
     qboolean playedLegsAnim = qfalse;
@@ -2299,7 +2337,7 @@ int custom_BG_ExecuteCommand(playerState_t *ps, animScriptCommand_t *scriptComma
     return duration;
 }
 
-void custom_DeathmatchScoreboardMessage(gentity_t *ent)
+void jmp_DeathmatchScoreboardMessage(gentity_t *ent)
 {
     int ping;
     int clientNum;
@@ -2395,9 +2433,9 @@ void custom_DeathmatchScoreboardMessage(gentity_t *ent)
 /*
 Attempting to fix Scr_Error crash
 */
-void custom_Scr_ErrorInternal(const char *error)
+void jmp_Scr_ErrorInternal(const char *error)
 {
-    printf("###### custom_Scr_ErrorInternal, error: %s\n", error);
+    printf("###### jmp_Scr_ErrorInternal, error: %s\n", error);
     
     char **scrVarPub_error_message = (char**)0x082f5880;
     *scrVarPub_error_message = (char*)error;
@@ -2452,7 +2490,7 @@ void CrashLogger(int sig)
     exit(1);
 }
 
-void *custom_Sys_LoadDll(const char *name, char *fqpath, int (**entryPoint)(int, ...), int (*systemcalls)(int, ...))
+void *jmp_Sys_LoadDll(const char *name, char *fqpath, int (**entryPoint)(int, ...), int (*systemcalls)(int, ...))
 {
     hook_Sys_LoadDll->unhook();
     void *(*Sys_LoadDll)(const char *name, char *fqpath, int (**entryPoint)(int, ...), int (*systemcalls)(int, ...));
@@ -2562,27 +2600,28 @@ void *custom_Sys_LoadDll(const char *name, char *fqpath, int (**entryPoint)(int,
     // See https://github.com/xtnded/codextended/blob/855df4fb01d20f19091d18d46980b5fdfa95a712/src/librarymodule.c#L161
     *(byte*)((int)dlsym(libHandle, "G_Say") + 0x2B3) = 0xeb;
     *(byte*)((int)dlsym(libHandle, "G_Say") + 0x3B6) = 0xeb;
-    hook_call((int)dlsym(libHandle, "G_Say") + 0x5EA, (int)hook_G_Say);
-    hook_call((int)dlsym(libHandle, "G_Say") + 0x77D, (int)hook_G_Say);
-    hook_call((int)dlsym(libHandle, "G_Say") + 0x791, (int)hook_G_Say);
+    hook_call((int)dlsym(libHandle, "G_Say") + 0x5EA, (int)call_G_Say);
+    hook_call((int)dlsym(libHandle, "G_Say") + 0x77D, (int)call_G_Say);
+    hook_call((int)dlsym(libHandle, "G_Say") + 0x791, (int)call_G_Say);
     ////
     
-    hook_call((int)dlsym(libHandle, "vmMain") + 0xB0, (int)hook_ClientCommand);
-    hook_call((int)dlsym(libHandle, "ClientEndFrame") + 0x311, (int)hook_StuckInClient);
+    hook_call((int)dlsym(libHandle, "vmMain") + 0xB0, (int)call_ClientCommand);
+    hook_call((int)dlsym(libHandle, "ClientEndFrame") + 0x311, (int)call_StuckInClient);
 
-    hook_jmp((int)dlsym(libHandle, "G_LocalizedStringIndex"), (int)custom_G_LocalizedStringIndex);
-    hook_jmp((int)dlsym(libHandle, "va"), (int)custom_va);
-    hook_jmp((int)dlsym(libHandle, "BG_ExecuteCommand"), (int)custom_BG_ExecuteCommand);
+    hook_jmp((int)dlsym(libHandle, "G_LocalizedStringIndex"), (int)jmp_G_LocalizedStringIndex);
+    hook_jmp((int)dlsym(libHandle, "va"), (int)jmp_va);
+    hook_jmp((int)dlsym(libHandle, "BG_ExecuteCommand"), (int)jmp_BG_ExecuteCommand);
+    hook_jmp((int)dlsym(libHandle, "DeathmatchScoreboardMessage"), (int)jmp_DeathmatchScoreboardMessage);
+
+
     
-    hook_GScr_LoadGameTypeScript = new cHook((int)dlsym(libHandle, "GScr_LoadGameTypeScript"), (int)custom_GScr_LoadGameTypeScript);
+    hook_GScr_LoadGameTypeScript = new cHook((int)dlsym(libHandle, "GScr_LoadGameTypeScript"), (int)jmp_GScr_LoadGameTypeScript);
     hook_GScr_LoadGameTypeScript->hook();
-    hook_ClientEndFrame = new cHook((int)dlsym(libHandle, "ClientEndFrame"), (int)custom_ClientEndFrame);
+    hook_ClientEndFrame = new cHook((int)dlsym(libHandle, "ClientEndFrame"), (int)jmp_ClientEndFrame);
     hook_ClientEndFrame->hook();
-    hook_DeathmatchScoreboardMessage = new cHook((int)dlsym(libHandle, "DeathmatchScoreboardMessage"), (int)custom_DeathmatchScoreboardMessage);
-    hook_DeathmatchScoreboardMessage->hook();
-    hook_PM_FlyMove = new cHook((int)dlsym(libHandle, "_init") + 0x79C8, (int)custom_PM_FlyMove);
+    hook_PM_FlyMove = new cHook((int)dlsym(libHandle, "_init") + 0x79C8, (int)jmp_PM_FlyMove);
     hook_PM_FlyMove->hook();
-    hook_BG_PlayAnim = new cHook((int)dlsym(libHandle, "BG_PlayAnim"), (int)custom_BG_PlayAnim);
+    hook_BG_PlayAnim = new cHook((int)dlsym(libHandle, "BG_PlayAnim"), (int)jmp_BG_PlayAnim);
     hook_BG_PlayAnim->hook();
     
     return libHandle;
@@ -2622,48 +2661,48 @@ class iw1x
         */
         *(byte*)0x807f459 = 1;
         
-        hook_call(0x08085213, (int)hook_AuthorizeState);
-        hook_call(0x08094c54, (int)hook_Scr_GetFunction);
-        hook_call(0x080951c4, (int)hook_Scr_GetMethod);
-        hook_call(0x0808c7b8, (int)hook_SV_DirectConnect);
-        hook_call(0x0808c7ea, (int)hook_SV_AuthorizeIpPacket);
-        hook_call(0x0808c74e, (int)hook_SVC_Info);
-        hook_call(0x0808c2cd, (int)hook_SVC_Info_Info_SetValueForKey_gametype_mapname);
-        hook_call(0x0808c25e, (int)hook_SVC_Info_Info_SetValueForKey_gametype_mapname);
+        hook_call(0x08085213, (int)call_AuthorizeState);
+        hook_call(0x08094c54, (int)call_Scr_GetFunction);
+        hook_call(0x080951c4, (int)call_Scr_GetMethod);
+        hook_call(0x0808c7b8, (int)call_SV_DirectConnect);
+        hook_call(0x0808c7ea, (int)call_SV_AuthorizeIpPacket);
+        hook_call(0x0808c74e, (int)call_SVC_Info);
+        hook_call(0x0808c2cd, (int)call_SVC_Info_Info_SetValueForKey_gametype_mapname);
+        hook_call(0x0808c25e, (int)call_SVC_Info_Info_SetValueForKey_gametype_mapname);
 
-        hook_jmp(0x080717a4, (int)custom_FS_ReferencedPakChecksums);
-        hook_jmp(0x080716cc, (int)custom_FS_ReferencedPakNames);
-        hook_jmp(0x080872ec, (int)custom_SV_ExecuteClientMessage);
-        hook_jmp(0x0809045c, (int)custom_SV_SendClientMessages);
-        hook_jmp(0x08086290, (int)custom_SV_WriteDownloadToClient);
-        hook_jmp(0x0808f680, (int)custom_SV_SendMessageToClient);
-        hook_jmp(0x0808ba0c, (int)custom_SV_MasterHeartbeat);
-        hook_jmp(0x0808c870, (int)custom_SV_PacketEvent);
-        hook_jmp(0x08085eec, (int)custom_SV_SendClientGameState);
-        hook_jmp(0x08084d90, (int)custom_SV_GetChallenge);
-        hook_jmp(0x0808b580, (int)custom_SV_CanReplaceServerCommand);
-        hook_jmp(0x08086e08, (int)custom_SV_ClientCommand);
-        hook_jmp(0x0808c404, (int)custom_SVC_RemoteCommand);
-        hook_jmp(0x0808bd58, (int)custom_SVC_Status);
-        hook_jmp(0x08084524, (int)custom_SV_BanNum_f);
-        hook_jmp(0x08086168, (int)custom_SV_NextDownload_f);
-        hook_jmp(0x0808ad8c, (int)custom_SV_Shutdown);
-        hook_jmp(0x08083de4, (int)custom_SV_MapRestart_f);
+        hook_jmp(0x080717a4, (int)jmp_FS_ReferencedPakChecksums);
+        hook_jmp(0x080716cc, (int)jmp_FS_ReferencedPakNames);
+        hook_jmp(0x080872ec, (int)jmp_SV_ExecuteClientMessage);
+        hook_jmp(0x0809045c, (int)jmp_SV_SendClientMessages);
+        hook_jmp(0x08086290, (int)jmp_SV_WriteDownloadToClient);
+        hook_jmp(0x0808f680, (int)jmp_SV_SendMessageToClient);
+        hook_jmp(0x0808ba0c, (int)jmp_SV_MasterHeartbeat);
+        hook_jmp(0x0808c870, (int)jmp_SV_PacketEvent);
+        hook_jmp(0x08085eec, (int)jmp_SV_SendClientGameState);
+        hook_jmp(0x08084d90, (int)jmp_SV_GetChallenge);
+        hook_jmp(0x0808b580, (int)jmp_SV_CanReplaceServerCommand);
+        hook_jmp(0x08086e08, (int)jmp_SV_ClientCommand);
+        hook_jmp(0x0808c404, (int)jmp_SVC_RemoteCommand);
+        hook_jmp(0x0808bd58, (int)jmp_SVC_Status);
+        hook_jmp(0x08084524, (int)jmp_SV_BanNum_f);
+        hook_jmp(0x08086168, (int)jmp_SV_NextDownload_f);
+        hook_jmp(0x0808ad8c, (int)jmp_SV_Shutdown);
+        hook_jmp(0x08083de4, (int)jmp_SV_MapRestart_f);
 
 
-        //hook_jmp(0x080aa158, (int)custom_Scr_ErrorInternal);
+        //hook_jmp(0x080aa158, (int)jmp_Scr_ErrorInternal);
         //hook_nop(0x080c9392, 2);
         
         
         
         
-        hook_Sys_LoadDll = new cHook(0x080c5fe4, (int)custom_Sys_LoadDll);
+        hook_Sys_LoadDll = new cHook(0x080c5fe4, (int)jmp_Sys_LoadDll);
         hook_Sys_LoadDll->hook();
-        hook_Com_Init = new cHook(0x0806c654, (int)custom_Com_Init);
+        hook_Com_Init = new cHook(0x0806c654, (int)jmp_Com_Init);
         hook_Com_Init->hook();
-        hook_SV_BeginDownload_f = new cHook(0x08087a64, (int)custom_SV_BeginDownload_f);
+        hook_SV_BeginDownload_f = new cHook(0x08087a64, (int)jmp_SV_BeginDownload_f);
         hook_SV_BeginDownload_f->hook();
-        hook_SV_SpawnServer = new cHook(0x0808a220, (int)custom_SV_SpawnServer);
+        hook_SV_SpawnServer = new cHook(0x0808a220, (int)jmp_SV_SpawnServer);
         hook_SV_SpawnServer->hook();
 
         printf("----------------------\n");
