@@ -8,10 +8,10 @@
 
 Old version: https://vcodmods.com/server/iw1x-server-source
 # CoD 1.1 server mod
-**Focused on improving downloading and security**
+**Adding features, bug fixes and security**
 
 Some features are:
-- Faster download speed (UDP)
+- Faster UDP download speed
 - Download stuck issue fix
 - Freeze exploit patch
 - CD key validity bypass
