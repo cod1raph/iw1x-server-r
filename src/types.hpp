@@ -8,7 +8,6 @@
 #define VectorScale(v, s, o)    ((o)[0] = (v)[0] * (s), (o)[1] = (v)[1] * (s), (o)[2] = (v)[2] * (s))
 
 #define BIG_INFO_STRING 0x2000
-#define GENTITYNUM_BITS 10
 #define PACKET_BACKUP 32
 #define PACKET_MASK (PACKET_BACKUP - 1)
 #define SV_OUTPUTBUF_LENGTH (2048 * MAX_CLIENTS - 16) // Stock = (256 * MAX_CLIENTS - 16)
@@ -36,7 +35,7 @@
 #define MAX_DOWNLOAD_BLKSIZE_FAST   0x2000 // See https://github.com/ibuddieat/zk_libcod/blob/dff123fad25d7b46d65685e9bca2111c8946a36e/code/declarations.hpp#L60
 #define MAX_DOWNLOAD_WINDOW         8
 #define MAX_ENT_CLUSTERS            16
-#define MAX_GENTITIES               (1 << GENTITYNUM_BITS)
+#define MAX_GENTITIES               0x400
 #define MAX_INFO_STRING             0x400
 #define MAX_MSGLEN                  0x4000
 #define MAX_NETNAME                 36
@@ -223,15 +222,7 @@ typedef enum
 
 typedef enum
 {
-    TR_STATIONARY = 0,
-    TR_INTERPOLATE = 1,
-    TR_LINEAR = 2,
-    TR_LINEAR_STOP = 3,
-    TR_SINE = 4,
-    TR_GRAVITY = 5,
-    TR_GRAVITY_PAUSED = 6,
-    TR_ACCELERATE = 7,
-    TR_DECCELERATE = 8
+    //...
 } trType_t;
 
 typedef enum
@@ -993,6 +984,13 @@ typedef struct
     //...
 } level_locals_t;
 
+typedef struct svEntity_s
+{
+    byte gap_0x08355678[0x8];
+    entityState_t baseline; // 08357680
+    byte gap_0x8357770[0x84];
+} svEntity_t;
+
 typedef struct
 {
     serverState_t state;    // 08355260
@@ -1002,8 +1000,9 @@ typedef struct
     int timeResidual;       // 08355270
     byte gap_0x8355274[0x404];
     char *configstrings[MAX_CONFIGSTRINGS]; // 08355678
-    byte gap_0x8357678[0x5F004];
-    gentity_t *gentities;   // 083b667c
+    svEntity_t svEntities[MAX_GENTITIES];   // 08357678
+    const char *entityParsePoint;   // 083b6678
+    gentity_t *gentities;           // 083b667c
     byte gap_0x83B6680[0x10];
     int	bpsWindow[MAX_BPS_WINDOW];  // 083b6690
     int	bpsWindowSteps; // 083b66e0
@@ -1143,7 +1142,6 @@ extern animScriptData_t **globalScriptData;
 #define bloc (*((int*)(0x080dded8)))
 
 // Require structure sizes to match
-#if __GNUC__ >= 6
 static_assert((sizeof(netchan_t) == 32832), "ERROR: netchan_t size is invalid");
 static_assert((sizeof(entityState_t) == 240), "ERROR: entityState_t size is invalid");
 static_assert((sizeof(client_t) == 370940), "ERROR: client_t size is invalid");
@@ -1158,7 +1156,7 @@ static_assert((sizeof(netadr_t) == 20), "ERROR: netadr_t size is invalid");
 static_assert((sizeof(server_t) == 398572), "ERROR: server_t size is invalid");
 static_assert((sizeof(challenge_t) == 44), "ERROR: challenge_t size is invalid");
 static_assert((sizeof(animation_t) == 92), "ERROR: animation_t size is invalid!");
-#endif
+static_assert((sizeof(svEntity_t) == 380), "ERROR: svEntity_t size is invalid!");
 
 
 //// Custom

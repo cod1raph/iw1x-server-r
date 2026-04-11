@@ -1453,7 +1453,7 @@ const char* call_AuthorizeState(int arg)
 void jmp_SV_SendClientGameState(client_t *client)
 {
     int start;
-    entityState_t /**base,*/ nullstate;
+    entityState_t *base, nullstate;
     msg_t msg;
     byte msgBuffer[MAX_MSGLEN];
     int clientNum = client - svs.clients;
@@ -1521,25 +1521,16 @@ void jmp_SV_SendClientGameState(client_t *client)
         }
     }
     
-    // TODO: cleanup
     memset(&nullstate, 0, sizeof(nullstate));
-    int *base = (int*)(0x08357680);
     for (start = 0; start < MAX_GENTITIES; start++)
     {
-        base += 0x5f;
-        //base = &sv.svEntities[start].baseline.s;
-        if(!*base)
-        //if(!base->number)
+        base = &sv.svEntities[start].baseline;
+        if(!base->number)
             continue;
         MSG_WriteByte(&msg, svc_baseline);
-        //MSG_WriteDeltaEntity(&msg, &nullstate, base, qtrue);
-        ((void(*)(
-            msg_t*,
-            struct entityState_s*,
-            int*,
-            qboolean))0x807f698)(&msg, &nullstate, base, qtrue); //MSG_WriteDeltaEntity
+        MSG_WriteDeltaEntity(&msg, &nullstate, base, qtrue);
     }
-    
+
     MSG_WriteByte(&msg, svc_EOF);
     MSG_WriteLong(&msg, clientNum);
     MSG_WriteLong(&msg, sv.checksumFeed);
