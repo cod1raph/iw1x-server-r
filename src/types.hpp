@@ -107,17 +107,9 @@ enum svc_ops_e
 
 typedef enum
 {
-    ET_GENERAL = 0x0,
-    ET_PLAYER = 0x1,
+    //...
     ET_PLAYER_CORPSE = 0x2,
-    ET_ITEM = 0x3,
-    ET_MISSILE = 0x4,
-    ET_INVISIBLE = 0x5,
-    ET_SCRIPTMOVER = 0x6,
-    ET_FX = 0x7,
-    ET_LOOP_FX = 0x8,
-    ET_TURRET = 0x9,
-    ET_EVENTS = 0xA
+    //...
 } entityType_t;
 
 typedef enum
@@ -234,24 +226,12 @@ typedef enum
     PM_SPECTATOR = 0x4,
     PM_INTERMISSION = 0x5,
     PM_DEAD = 0x6,
-    PM_DEAD_LINKED = 0x7,
+    PM_DEAD_LINKED = 0x7
 } pmtype_t;
 
 typedef enum
 {
-    WEAPON_READY = 0x0,
-    WEAPON_RAISING = 0x1,
-    WEAPON_DROPPING = 0x2,
-    WEAPON_FIRING = 0x3,
-    WEAPON_RECHAMBERING = 0x4,
-    WEAPON_RELOADING = 0x5,
-    WEAPON_RELOADING_INTERUPT = 0x6,
-    WEAPON_RELOAD_START = 0x7,
-    WEAPON_RELOAD_START_INTERUPT = 0x8,
-    WEAPON_RELOAD_END = 0x9,
-    WEAPON_MELEE_INIT = 0xA,
-    WEAPON_MELEE_FIRE = 0xB,
-    WEAPONSTATES_NUM = 0xC,
+    //...
 } weaponstate_t;
 
 typedef enum
@@ -272,7 +252,7 @@ enum clc_ops_e
 enum svscmd_type
 {
     SV_CMD_CAN_IGNORE = 0x0,
-    SV_CMD_RELIABLE = 0x1,
+    SV_CMD_RELIABLE = 0x1
 };
 
 typedef enum
@@ -282,35 +262,10 @@ typedef enum
     EXEC_APPEND
 } cbufExec_t;
 
-typedef enum
-{
-    ANIM_ET_PAIN,
-    ANIM_ET_DEATH,
-    ANIM_ET_FIREWEAPON,
-    UNKNOWN,                    // Does nothing
-    UNKNOWN_2,                  // Does nothing
-    ANIM_ET_LAND,       
-    ANIM_ET_DROPWEAPON,         // Change weapon
-    UNKNOWN_3,                  // Does nothing
-    UNKNOWN_4,                  // Does nothing
-    UNKNOWN_5,                  // Does nothing
-    ANIM_ET_RELOAD, // 10
-    UNKNOWN_6,                  // Does nothing
-    UNKNOWN_7,                  // Does nothing
-    ANIM_ET_MELEEATTACK,
-    ANIM_ET_CROUCH_TO_STAND,    // CRASH
-    UNKNOWN_8,
-    UNKNOWN_9,
-    UNKNOWN_10,
-    ANIM_ET_SHELLSHOCK,         // CRASH
-
-    NUM_ANIM_EVENTTYPES
-} scriptAnimEventTypes_t; // TODO: verify
-
 enum weapAnimNumber_t
 {
     WEAP_IDLE = 0x0,
-    WEAP_FORCE_IDLE = 0x1,
+    WEAP_IDLE2 = 0x1, // Seems unused by client (see 30034420 in cgame_mp_x86.dll)
     WEAP_ATTACK = 0x2,
     WEAP_ATTACK_LASTSHOT = 0x3,
     WEAP_RECHAMBER = 0x4,
@@ -326,8 +281,8 @@ enum weapAnimNumber_t
     WEAP_RELOAD_END = 0xE,
     WEAP_ALTSWITCHFROM = 0xF,
     WEAP_ALTSWITCHTO = 0x10,
-    MAX_WP_ANIMATIONS = 0x11,
-}; // TODO: verify
+    MAX_WP_ANIMATIONS = 0x11
+};
 
 enum var_type_t
 {
